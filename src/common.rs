@@ -132,6 +132,39 @@ pub fn parse_expression(layer: &Layer, value: &serde_json::Value) -> Option<Vec<
     let first = arr.first()?.as_str()?;
 
     match first {
+        "match" => {
+            if arr.len() < 4 {
+                return None;
+            }
+
+            let _field = arr.get(1).and_then(|v| {
+                if let Some(get_arr) = v.as_array() {
+                    if get_arr.len() == 2 && get_arr[0] == "get" {
+                        return get_arr[1].as_str();
+                    }
+                }
+                None
+            })?;
+
+            let mut result = Vec::new();
+            let mut i = 2;
+            while i + 1 < arr.len() {
+                let value = arr.get(i)?.as_str()?;
+                let color = arr.get(i + 1)?.as_str().unwrap_or("#cccccc").to_string();
+                let label = value.to_string();
+                result.push((label, color));
+                i += 2;
+            }
+
+            if arr.len() % 2 == 0 {
+                if let Some(default_color) = arr.last().and_then(|v| v.as_str()) {
+                    let default_label = get_layer_default_label(layer);
+                    result.push((default_label, default_color.to_string()));
+                }
+            }
+
+            Some(result)
+        },
         "case" => {
             let mut result = Vec::new();
             let mut i = 1;
