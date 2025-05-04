@@ -42,6 +42,21 @@ fn get_layer_default_label(layer: &Layer) -> String {
         .unwrap_or_else(|| layer.id.clone())
 }
 
+fn get_interpolate_labels(layer: &Layer) -> Vec<String> {
+    layer
+        .metadata
+        .as_ref()
+        .and_then(|m| m.get("legend"))
+        .and_then(|l| l.as_object())
+        .and_then(|l| l.get("interpolate-labels"))
+        .and_then(|l| l.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                .collect::<Vec<String>>()
+        })
+        .unwrap_or_default()
+}
 pub fn render_label(
     layer: &Layer,
     doc: &mut Document,
@@ -142,6 +157,7 @@ pub fn parse_expression(layer: &Layer, value: &serde_json::Value) -> Option<Vec<
             if arr.len() < 4 {
                 return None;
             }
+            let labels = get_interpolate_labels(layer);
 
             let field = arr.get(2).and_then(|v| {
                 if let Some(get_arr) = v.as_array() {
@@ -154,11 +170,18 @@ pub fn parse_expression(layer: &Layer, value: &serde_json::Value) -> Option<Vec<
 
             let mut result = Vec::new();
             let mut i = 3;
+            let mut label_index = 0;
             while i + 1 < arr.len() {
                 let val = arr.get(i)?.as_f64()?;
                 let color = arr.get(i + 1)?.as_str().unwrap_or("#cccccc").to_string();
-                result.push((format!("{field} ≥ {val}"), color));
+                let label = if !labels.is_empty() && label_index < labels.len() {
+                    labels[label_index].clone()
+                } else {
+                    format!("{field} ≥ {val}")
+                };
+                result.push((label, color));
                 i += 2;
+                label_index += 1;
             }
 
             Some(result)
