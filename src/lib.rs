@@ -57,21 +57,24 @@ impl MapLibreLegend {
         })
     }
 
-    /// Renders a specific layer as an SVG, identified by its ID.
+    /// Renders a specific layer as an SVG string, identified by its ID.
     ///
     /// # Parameters
     /// - `id`: The identifier of the layer to render.
+    /// - `has_label`: An optional boolean indicating whether to render a label for the layer.
+    ///   If `Some(true)` or `Some(false)`, uses the specified value; if `None`, falls back to
+    ///   the default `self.has_label` value.
     ///
     /// # Returns
-    /// - `Option<String>`: A string containing the SVG of the layer if found and renderable,
-    ///   or `None` if the layer does not exist or is not renderable.
-    pub fn render_layer(&self, id: &str) -> Option<String> {
+    /// - `Option<String>`: A string containing the SVG representation of the layer if found and
+    ///   renderable, or `None` if the layer does not exist or cannot be rendered.
+    pub fn render_layer(&self, id: &str, has_label: Option<bool>) -> Option<String> {
         let layer = self.style.layers.iter().find(|l| l.id == id)?;
         render_layer_svg(
             layer,
             self.default_width,
             self.default_height,
-            self.has_label,
+            has_label.unwrap_or(self.has_label),
             self.include_raster,
         )
         .map(|(svg, _, _)| svg)
