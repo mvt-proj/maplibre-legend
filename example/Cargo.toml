@@ -1,0 +1,7 @@
+[package]
+name = "maplibre-legend-prueba"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+maplibre-legend = { path = "../maplibre-legend" }
