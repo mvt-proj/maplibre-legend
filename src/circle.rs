@@ -12,10 +12,14 @@ pub fn render_circle(
     let color_expr = paint.get("circle-color")?;
     let cases = parse_expression(layer, color_expr);
 
-    let radius = paint
+    let mut radius = paint
         .get("circle-radius")
         .and_then(|v| v.as_f64())
         .unwrap_or(10.0);
+    if radius > 25.0 {
+        radius = 25.0;
+    }
+
     let stroke_color =
         extract_color(paint.get("circle-stroke-color")).unwrap_or("black".to_string());
     let stroke_width = paint
