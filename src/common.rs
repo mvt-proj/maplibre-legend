@@ -148,7 +148,7 @@ pub fn parse_expression(layer: &Layer, value: &serde_json::Value) -> Option<Vec<
 
             let mut result = Vec::new();
             let mut i = 2;
-            while i + 1 < arr.len() {
+            while i + 1 < arr.len() - 1 {
                 let value = arr.get(i)?.as_str()?;
                 let color = arr.get(i + 1)?.as_str().unwrap_or("#cccccc").to_string();
                 let label = value.to_string();
@@ -156,11 +156,9 @@ pub fn parse_expression(layer: &Layer, value: &serde_json::Value) -> Option<Vec<
                 i += 2;
             }
 
-            if arr.len() % 2 == 0 {
-                if let Some(default_color) = arr.last().and_then(|v| v.as_str()) {
-                    let default_label = get_layer_default_label(layer);
-                    result.push((default_label, default_color.to_string()));
-                }
+            if let Some(default_color) = arr.last().and_then(|v| v.as_str()) {
+                let default_label = get_layer_default_label(layer);
+                result.push((default_label, default_color.to_string()));
             }
 
             Some(result)
