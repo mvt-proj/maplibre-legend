@@ -76,18 +76,19 @@ let svg = legend.render_all();
 
 produces a full-page legend similar to:
 
+<hr>
 
 **style.json**
 
 ![combined](https://github.com/user-attachments/assets/45f11696-c5d8-499a-8ab9-8a66a2cd82b0)
 
-
+<hr>
 
 **style2.json**
 
 ![combined](https://github.com/user-attachments/assets/d865faf8-277f-48d7-8b19-541d0f984493)
 
-
+<hr>
 
 **style3.json**
 
