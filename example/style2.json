@@ -1,0 +1,246 @@
+{
+  "version": 8,
+  "name": "Legend Test Style",
+  "sources": {
+    "dummy-source": {
+      "type": "geojson",
+      "data": {
+        "type": "FeatureCollection",
+        "features": []
+      }
+    }
+  },
+  "layers": [
+    {
+      "id": "zonas-agricolas",
+      "type": "fill",
+      "source": "dummy-source",
+      "paint": {
+        "fill-color": "#8BC34A",
+        "fill-opacity": 0.4
+      },
+      "metadata": {
+        "legend": {
+          "label": "Zonas Agrícolas"
+        }
+      }
+    },
+    {
+      "id": "uso-del-suelo",
+      "type": "fill",
+      "source": "dummy-source",
+      "paint": {
+        "fill-color": [
+          "match",
+          [
+            "get",
+            "uso"
+          ],
+          "Residencial",
+          "#FFC107",
+          "Comercial",
+          "#FF5722",
+          "Industrial",
+          "#9C27B0",
+          "#BDBDBD"
+        ]
+      },
+      "metadata": {
+        "legend": {
+          "label": "Uso del Suelo",
+          "default": "Otro"
+        }
+      }
+    },
+    {
+      "id": "carreteras",
+      "type": "line",
+      "source": "dummy-source",
+      "paint": {
+        "line-color": "#F44336",
+        "line-width": 3
+      },
+      "metadata": {
+        "legend": {
+          "label": "Carreteras Principales"
+        }
+      }
+    },
+    {
+      "id": "senderos",
+      "type": "line",
+      "source": "dummy-source",
+      "paint": {
+        "line-color": "#4CAF50",
+        "line-dasharray": [
+          2,
+          2
+        ]
+      },
+      "metadata": {
+        "legend": {
+          "label": "Senderos Peatonales"
+        }
+      }
+    },
+    {
+      "id": "rios",
+      "type": "line",
+      "source": "dummy-source",
+      "paint": {
+        "line-color": "#2196F3",
+        "line-width": 2
+      },
+      "metadata": {
+        "legend": {
+          "label": "Ríos y Arroyos"
+        }
+      }
+    },
+    {
+      "id": "estaciones-meteo",
+      "type": "circle",
+      "source": "dummy-source",
+      "paint": {
+        "circle-color": "#00BCD4",
+        "circle-radius": 8
+      },
+      "metadata": {
+        "legend": {
+          "label": "Estaciones Meteorológicas"
+        }
+      }
+    },
+    {
+      "id": "escuelas",
+      "type": "symbol",
+      "source": "dummy-source",
+      "layout": {
+        "icon-image": "school-15"
+      },
+      "metadata": {
+        "legend": {
+          "label": "Escuelas Públicas"
+        }
+      }
+    },
+    {
+      "id": "hospitales",
+      "type": "symbol",
+      "source": "dummy-source",
+      "layout": {
+        "icon-image": "hospital-15"
+      },
+      "metadata": {
+        "legend": {
+          "label": "Hospitales"
+        }
+      }
+    },
+    {
+      "id": "areas-protegidas",
+      "type": "fill",
+      "source": "dummy-source",
+      "paint": {
+        "fill-color": "#388E3C",
+        "fill-opacity": 0.3
+      },
+      "metadata": {
+        "legend": {
+          "label": "Áreas Protegidas"
+        }
+      }
+    },
+    {
+      "id": "zonas-inundables",
+      "type": "fill",
+      "source": "dummy-source",
+      "paint": {
+        "fill-color": "#03A9F4",
+        "fill-opacity": 0.2
+      },
+      "metadata": {
+        "legend": {
+          "label": "Zonas Inundables"
+        }
+      }
+    },
+    {
+      "id": "limites-dptales",
+      "type": "line",
+      "source": "dummy-source",
+      "paint": {
+        "line-color": "#000000",
+        "line-width": 2
+      },
+      "metadata": {
+        "legend": {
+          "label": "Límites Departamentales"
+        }
+      }
+    },
+    {
+      "id": "red-gas",
+      "type": "line",
+      "source": "dummy-source",
+      "paint": {
+        "line-color": "#FFEB3B",
+        "line-width": 1.5
+      },
+      "metadata": {
+        "legend": {
+          "label": "Red de Gas Natural"
+        }
+      }
+    },
+    {
+      "id": "recoleccion-residuos",
+      "type": "circle",
+      "source": "dummy-source",
+      "paint": {
+        "circle-color": "#795548",
+        "circle-radius": 6
+      },
+      "metadata": {
+        "legend": {
+          "label": "Puntos de Recolección"
+        }
+      }
+    },
+    {
+      "id": "antenas",
+      "type": "circle",
+      "source": "dummy-source",
+      "paint": {
+        "circle-color": "#9E9E9E",
+        "circle-radius": 10
+      },
+      "metadata": {
+        "legend": {
+          "label": "Antenas de Telefonía"
+        }
+      }
+    },
+    {
+      "id": "contorno-urbano",
+      "type": "line",
+      "source": "dummy-source",
+      "paint": {
+        "line-color": "#FF4081",
+        "line-width": 2,
+        "line-dasharray": [
+          4,
+          2
+        ]
+      },
+      "metadata": {
+        "legend": {
+          "label": "Contorno Urbano"
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "generated": "legend test"
+  }
+}

@@ -1,0 +1,194 @@
+{
+  "version": 8,
+  "name": "Interpolación y Categorización",
+  "sources": {
+    "dummy-source": {
+      "type": "geojson",
+      "data": {
+        "type": "FeatureCollection",
+        "features": []
+      }
+    }
+  },
+  "layers": [
+    {
+      "id": "densidad-poblacion",
+      "type": "fill",
+      "source": "dummy-source",
+      "paint": {
+        "fill-color": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "get",
+            "densidad"
+          ],
+          0,
+          "#e0f7fa",
+          50,
+          "#80deea",
+          100,
+          "#26c6da",
+          200,
+          "#00acc1",
+          500,
+          "#00838f"
+        ],
+        "fill-opacity": 0.7
+      },
+      "metadata": {
+        "legend": {
+          "label": "Densidad Poblacional (hab/ha)",
+          "interpolate-labels": [
+            "Hasta 50 hab/ha",
+            "De 50 a 100 hab/ha",
+            "De 100 a 200 hab/ha",
+            "De 200 a 500 hab/ha",
+            "Más de 500 hab/ha"
+          ]
+        },
+        "alias": "Densidad Poblacional"
+      }
+    },
+    {
+      "id": "altitud",
+      "type": "fill",
+      "source": "dummy-source",
+      "paint": {
+        "fill-color": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "get",
+            "elevacion"
+          ],
+          0,
+          "#f1f8e9",
+          200,
+          "#c5e1a5",
+          1000,
+          "#9ccc65",
+          2000,
+          "#7cb342",
+          3000,
+          "#558b2f"
+        ]
+      },
+      "metadata": {
+        "legend": {
+          "label": "Altitud (msnm)",
+          "interpolate-labels": [
+            "Hasta 200 msnm",
+            "De 200 a 1000 msnm",
+            "De 1000 a 2000 msnm",
+            "De 2000 a 3000 msnm",
+            "Más de 3000 msnm"
+          ]
+        }
+      }
+    },
+    {
+      "id": "tipo-cultivo",
+      "type": "fill",
+      "source": "dummy-source",
+      "paint": {
+        "fill-color": [
+          "match",
+          [
+            "get",
+            "cultivo"
+          ],
+          "Maíz",
+          "#FFEB3B",
+          "Soja",
+          "#8BC34A",
+          "Trigo",
+          "#FF9800",
+          "Girasol",
+          "#FF5722",
+          "#BDBDBD"
+        ]
+      },
+      "metadata": {
+        "legend": {
+          "label": "Tipo de Cultivo",
+          "default": "Otro"
+        }
+      }
+    },
+    {
+      "id": "tipo-vialidad",
+      "type": "line",
+      "source": "dummy-source",
+      "paint": {
+        "line-color": [
+          "match",
+          [
+            "get",
+            "tipo"
+          ],
+          "Ruta Nacional",
+          "#f44336",
+          "Ruta Provincial",
+          "#2196f3",
+          "Camino Rural",
+          "#795548",
+          "#9e9e9e"
+        ],
+        "line-width": 2
+      },
+      "metadata": {
+        "legend": {
+          "label": "Tipo de Vialidad",
+          "default": "Desconocido"
+        }
+      }
+    },
+    {
+      "id": "porcentaje-forestacion",
+      "type": "fill",
+      "source": "dummy-source",
+      "paint": {
+        "fill-color": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "get",
+            "forestacion"
+          ],
+          0,
+          "#fffde7",
+          10,
+          "#fff176",
+          25,
+          "#ffd54f",
+          50,
+          "#ffb300",
+          100,
+          "#ff6f00"
+        ]
+      },
+      "metadata": {
+        "legend": {
+          "label": "Porcentaje de Forestación (%)",
+          "interpolate-labels": [
+            "Sin cobertura",
+            "Hasta 10%",
+            "10 a 25%",
+            "25 a 50%",
+            "Más de 50%"
+          ]
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "generated": "legend test with interpolation and categories"
+  }
+}
