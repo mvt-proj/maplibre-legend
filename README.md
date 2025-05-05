@@ -6,11 +6,12 @@ Given a MapLibre style (e.g. `style.json`), this library parses all layers and p
 
 ## Features
 
-- Parse MapLibre GL style (v8) JSON into a structured `Style` model.  
-- Render individual layer legends (fill, line, circle) as SVG snippets.  
-- Optionally include raster layers.  
-- Render labels and customizable dimensions (`default_width`/`default_height`).  
-- Stack all layers into one combined SVG with separators.  
+- Parse MapLibre GL style (v8) JSON into a structured `Style` model.
+- Render individual layer legends (fill, line, circle) as SVG snippets.
+- Optionally include raster layers.
+- Render labels and customizable dimensions (`default_width`/`default_height`).
+- Stack all layers into one combined SVG with separators.
+- For finer details, the metadata attribute of the layer is used.
 
 ## Installation
 
