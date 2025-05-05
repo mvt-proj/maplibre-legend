@@ -75,10 +75,23 @@ let svg = legend.render_all();
 
 produces a full-page legend similar to:
 
+
+**style.json**
+
 ![combined](https://github.com/user-attachments/assets/45f11696-c5d8-499a-8ab9-8a66a2cd82b0)
 
 
-*(Actual output `legend.svg` is included in the `examples/` folder.)*
+
+**style2.json**
+
+![combined](https://github.com/user-attachments/assets/d865faf8-277f-48d7-8b19-541d0f984493)
+
+
+
+**style3.json**
+
+![combined](https://github.com/user-attachments/assets/f70e3ac7-eedf-4107-8ffd-d97de18e8888)
+
 
 ## Crate Modules
 
