@@ -94,8 +94,7 @@ produces a full-page legend similar to:
 
 1. Fork the repo and create a feature branch.
 2. Run `cargo fmt` and `cargo clippy` to keep code clean.
-3. Add unit tests for new features.
-4. Submit a pull request—feedback is welcome!
+3. Submit a pull request—feedback is welcome!
 
 ## License
 
