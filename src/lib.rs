@@ -4,6 +4,7 @@ mod common;
 mod fill;
 mod line;
 mod raster;
+mod default;
 
 // Imports of required functions and types from the modules.
 use circle::render_circle;
@@ -11,6 +12,7 @@ use common::{Layer, Style};
 use fill::render_fill;
 use line::render_line;
 use raster::render_raster;
+use default::render_default;
 
 /// Structure representing a MapLibre legend, used to render SVG representations
 /// of style layers based on a JSON specification.
@@ -159,6 +161,7 @@ fn render_layer_svg(
             }
         }
         "raster" if include_raster => render_raster(layer, def_w, def_h, render_label),
-        _ => None,
+        // _ => None,
+        _ => render_default(layer, def_w, def_h, render_label),
     }
 }
