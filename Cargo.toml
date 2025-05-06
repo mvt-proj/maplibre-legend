@@ -2,6 +2,13 @@
 name = "maplibre-legend"
 version = "0.1.0"
 edition = "2024"
+authors = ["Jose Jachuf <jjachuf@gmail.com>"]
+description = "A library that dynamically generates layer legends based on the information in a MapLibre style.json file."
+license = "BSD-3-Clause"
+repository = "https://github.com/mvt-proj/maplibre-legend"
+readme = "README.md"
+keywords = ["rust", "maplibre", "legend", "style.json"]
+categories = ["maps", "gis-tools", "maplibre"]
 
 [dependencies]
 svg = "0.18.0"
