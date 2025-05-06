@@ -4,6 +4,10 @@ A Rust crate to generate SVG legends from a [MapLibre GL style JSON][].
 
 Given a MapLibre style (e.g. `style.json`), this library parses all layers and produces standalone SVG symbols or a combined legend, complete with optional labels and raster entries.
 
+This project is a work in progress. It doesn't yet support all layer types, but it does cover the most common cases.
+By using each layer's `metadata` attribute, you can flexibly customize how the legend is generated—especially the labels.
+
+
 ## Features
 
 - Parse MapLibre GL style (v8) JSON into a structured `Style` model.
