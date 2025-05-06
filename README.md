@@ -20,7 +20,6 @@ Add this crate to your `Cargo.toml`:
 ```toml
 [dependencies]
 maplibre-legend = "0.1.0"  # replace with the latest version
-serde_json         = "1"    # for JSON deserialization
 ````
 
 Then in your code:
