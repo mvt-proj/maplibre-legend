@@ -7,7 +7,7 @@ description = "A library that dynamically generates layer legends based on the i
 license = "BSD-3-Clause"
 repository = "https://github.com/mvt-proj/maplibre-legend"
 readme = "README.md"
-keywords = ["rust", "maplibre", "legend", "style.json"]
+keywords = ["rust", "maplibre", "legend", "style-json"]
 categories = ["maps", "gis-tools", "maplibre"]
 
 [dependencies]
