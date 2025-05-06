@@ -34,7 +34,7 @@ impl MapLibreLegend {
     /// - `json`: A string containing the style in JSON format.
     /// - `default_width`: Default width for SVG renderings.
     /// - `default_height`: Default height for SVG renderings.
-    /// - `render_label`: Whether to render labels on layers.
+    /// - `has_label`: Whether to render labels on layers.
     /// - `include_raster`: Whether to include raster layers in rendering.
     ///
     /// # Returns
