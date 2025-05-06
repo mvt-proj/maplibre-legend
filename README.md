@@ -30,40 +30,28 @@ use maplibre_legend::MapLibreLegend;
 
 ## Usage
 
-### 1. Load a style and create a legend
-
 ```rust
-let json = std::fs::read_to_string("style.json")?;
-let legend = MapLibreLegend::new(
-    &json,       // the MapLibre style JSON
-    32,          // default width for each symbol
-    32,          // default height
-    true,        // render labels by default
-    false,       // do not include raster layers
-)?;
-```
+use maplibre_legend::MapLibreLegend;
+use std::fs;
 
-*Creates a `MapLibreLegend` instance by deserializing your JSON.*&#x20;
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let style_json = fs::read_to_string("style.json")?;
 
-### 2. Render a single layer
+    let legend = MapLibreLegend::new(&style_json, 250,40, true, true)?;
 
-```rust
-if let Some(svg) = legend.render_layer("parcelario-fill", None) {
-    println!("{}", svg);
+    /// Render a single layer
+    if let Some(svg) = legend.render_layer("vs2023", Some(true)) {
+        fs::write("vs2023.svg", svg)?;
+    }
+
+    /// Render all layers
+    let combined = legend.render_all();
+    fs::write("combined.svg", combined)?;
+
+    Ok(())
 }
+
 ```
-
-* The second argument (`None`) lets the legend fall back to the `has_label` value you provided.
-* Passing `Some(false)` will suppress the label for that specific symbol.&#x20;
-
-### 3. Render all layers at once
-
-```rust
-let combined_svg = legend.render_all();
-std::fs::write("legend.svg", &combined_svg)?;
-```
-
-This stacks each layer symbol vertically, drawing a thin separator between entries, and wraps everything in a single `<svg>` element sized to fit all symbols.&#x20;
 
 ## Examples
 
