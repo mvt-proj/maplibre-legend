@@ -49,7 +49,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     /// Render all layers
-    let combined = legend.render_all();
+    let combined = legend.render_all(true);
     fs::write("combined.svg", combined)?;
 
     Ok(())
@@ -62,7 +62,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 Given the included [`style.json`][] (which defines various raster, fill, line and circle layers with `metadata.legend.label`), calling:
 
 ```rust
-let svg = legend.render_all();
+let svg = legend.render_all(true);
 ```
 
 produces a full-page legend similar to:
@@ -79,6 +79,7 @@ produces a full-page legend similar to:
 * **`line`**: renders line layers
 * **`fill`**: renders polygon (fill) layers
 * **`raster`**: renders raster (tile) layers
+* **`default`**: renders a gray polygon
 * **`common`**: shared types (`Style`, `Layer`, etc.)
 
 ## Contributing
