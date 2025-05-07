@@ -6,12 +6,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let legend = MapLibreLegend::new(&style_json, 250,40, true, true)?;
 
-    /// Render a single layer
     if let Some(svg) = legend.render_layer("vs2023", Some(true)) {
         fs::write("vs2023.svg", svg)?;
     }
 
-    /// Render all layers
     let combined = legend.render_all(false);
     fs::write("combined.svg", combined)?;
 
