@@ -174,7 +174,7 @@ fn render_layer_svg(
             }
         }
         "raster" if include_raster => render_raster(layer, def_w, def_h, render_label),
-        // _ => None,
+        "raster" => None,
         _ => render_default(layer, def_w, def_h, render_label),
     }
 }
