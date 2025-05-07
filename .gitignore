@@ -1,3 +1,4 @@
 /target
 example/target
 *.svg
+*.core

@@ -12,7 +12,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     /// Render all layers
-    let combined = legend.render_all();
+    let combined = legend.render_all(false);
     fs::write("combined.svg", combined)?;
 
     Ok(())
