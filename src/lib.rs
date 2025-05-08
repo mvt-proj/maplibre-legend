@@ -1,18 +1,18 @@
 // Modules of the crate containing specific logic for rendering different types of layers.
 mod circle;
 mod common;
+mod default;
 mod fill;
 mod line;
 mod raster;
-mod default;
 
 // Imports of required functions and types from the modules.
 use circle::render_circle;
 use common::{Layer, Style};
+use default::render_default;
 use fill::render_fill;
 use line::render_line;
 use raster::render_raster;
-use default::render_default;
 
 /// Structure representing a MapLibre legend, used to render SVG representations
 /// of style layers based on a JSON specification.
@@ -82,66 +82,65 @@ impl MapLibreLegend {
         .map(|(svg, _, _)| svg)
     }
 
-/// Renders all layers in the style as a single combined SVG.
-///
-/// Layers are stacked vertically with separator lines between them. The resulting SVG
-/// has a width equal to the maximum layer width and a height equal to the sum of layer heights.
-///
-/// # Parameters
-/// - `rev`: If true, renders layers in reverse order.
-///
-/// # Returns
-/// - `String`: A string containing the combined SVG of all layers.
-pub fn render_all(&self, rev: bool) -> String {
-    let mut combined_body = String::new();
-    let mut y_offset = 0;
-    let mut max_width = 0;
-    let total_layers = self.style.layers.len();
+    /// Renders all layers in the style as a single combined SVG.
+    ///
+    /// Layers are stacked vertically with separator lines between them. The resulting SVG
+    /// has a width equal to the maximum layer width and a height equal to the sum of layer heights.
+    ///
+    /// # Parameters
+    /// - `rev`: If true, renders layers in reverse order.
+    ///
+    /// # Returns
+    /// - `String`: A string containing the combined SVG of all layers.
+    pub fn render_all(&self, rev: bool) -> String {
+        let mut combined_body = String::new();
+        let mut y_offset = 0;
+        let mut max_width = 0;
+        let total_layers = self.style.layers.len();
 
-    // Create an iterator in normal or reversed order
-    let layer_iter: Box<dyn Iterator<Item = (usize, &Layer)>> = if rev {
-        Box::new(self.style.layers.iter().enumerate().rev())
-    } else {
-        Box::new(self.style.layers.iter().enumerate())
-    };
+        // Create an iterator in normal or reversed order
+        let layer_iter: Box<dyn Iterator<Item = (usize, &Layer)>> = if rev {
+            Box::new(self.style.layers.iter().enumerate().rev())
+        } else {
+            Box::new(self.style.layers.iter().enumerate())
+        };
 
-    for (i, layer) in layer_iter {
-        if let Some((svg, w, h)) = render_layer_svg(
-            layer,
-            self.default_width,
-            self.default_height,
-            self.has_label,
-            self.include_raster,
-        ) {
-            let inner = svg
-                .lines()
-                .filter(|l| !l.contains("<svg") && !l.contains("</svg>"))
-                .collect::<Vec<_>>()
-                .join("\n");
-            max_width = max_width.max(w);
-            combined_body.push_str(&format!(
-                "<g transform='translate(0,{})'>{}\n</g>\n",
-                y_offset, inner
-            ));
-            let is_last = if rev { i == 0 } else { i == total_layers - 1 };
-            if !is_last {
+        for (i, layer) in layer_iter {
+            if let Some((svg, w, h)) = render_layer_svg(
+                layer,
+                self.default_width,
+                self.default_height,
+                self.has_label,
+                self.include_raster,
+            ) {
+                let inner = svg
+                    .lines()
+                    .filter(|l| !l.contains("<svg") && !l.contains("</svg>"))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                max_width = max_width.max(w);
                 combined_body.push_str(&format!(
+                    "<g transform='translate(0,{})'>{}\n</g>\n",
+                    y_offset, inner
+                ));
+                let is_last = if rev { i == 0 } else { i == total_layers - 1 };
+                if !is_last {
+                    combined_body.push_str(&format!(
                     "<line x1='0' y1='{}' x2='{}' y2='{}' stroke='#333333' stroke-width='0.5'/>\n",
                     y_offset + h, max_width, y_offset + h
                 ));
+                }
+                y_offset += h;
             }
-            y_offset += h;
         }
+
+        format!(
+            "<svg xmlns='http://www.w3.org/2000/svg' width='{w}' height='{h}' viewBox='0 0 {w} {h}'>\n{body}</svg>",
+            w = max_width,
+            h = y_offset,
+            body = combined_body
+        )
     }
-
-    format!(
-        "<svg xmlns='http://www.w3.org/2000/svg' width='{w}' height='{h}' viewBox='0 0 {w} {h}'>\n{body}</svg>",
-        w = max_width,
-        h = y_offset,
-        body = combined_body
-    )
-}
-
 }
 
 /// Renders a single layer as an SVG based on its type and properties.

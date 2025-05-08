@@ -12,7 +12,6 @@ pub fn render_default(
     let outline_color = "#333333";
     let opacity = 0.8;
 
-
     let mut doc = Document::new()
         .set("width", default_width)
         .set("height", default_height);
