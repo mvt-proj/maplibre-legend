@@ -41,7 +41,7 @@
       "metadata": {
         "legend": {
           "label": "Densidad Poblacional (hab/ha)",
-          "interpolate-labels": [
+          "custom-labels": [
             "Hasta 50 hab/ha",
             "De 50 a 100 hab/ha",
             "De 100 a 200 hab/ha",
@@ -81,7 +81,7 @@
       "metadata": {
         "legend": {
           "label": "Altitud (msnm)",
-          "interpolate-labels": [
+          "custom-labels": [
             "Hasta 200 msnm",
             "De 200 a 1000 msnm",
             "De 1000 a 2000 msnm",
@@ -177,7 +177,7 @@
       "metadata": {
         "legend": {
           "label": "Porcentaje de Forestación (%)",
-          "interpolate-labels": [
+          "custom-labels": [
             "Sin cobertura",
             "Hasta 10%",
             "10 a 25%",

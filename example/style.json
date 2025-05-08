@@ -317,7 +317,7 @@
       "metadata": {
         "legend": {
           "label": "Valores del Suelo 2023",
-          "interpolate-labels": [
+          "custom-labels": [
             "Hasta U$D 100",
             "De U$D 100 as U$D 250",
             "De U$D 250 as U$D 750",
