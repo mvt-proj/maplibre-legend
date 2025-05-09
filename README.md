@@ -59,6 +59,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Examples
 
+### Legend Generation from MapLibre Styles
+
+This Rust library allows you to generate legends based on a MapLibre `styles.json` file. It processes the style definition to extract information about layers and their visual representations, translating this into a structured legend.
+
+
 Given the included [`style.json`][] (which defines various raster, fill, line and circle layers with `metadata.legend.label`), calling:
 
 ```rust
@@ -72,6 +77,41 @@ produces a full-page legend similar to:
 |---|---|---|
 | ![combined](https://github.com/user-attachments/assets/45f11696-c5d8-499a-8ab9-8a66a2cd82b0) | ![combined](https://github.com/user-attachments/assets/d865faf8-277f-48d7-8b19-541d0f984493) | ![combined](https://github.com/user-attachments/assets/f70e3ac7-eedf-4107-8ffd-d97de18e8888) |
 
+
+## Customizing Legends with Metadata
+
+MapLibre styles allow for a `metadata` object within each layer definition. This library leverages a specific structure within this `metadata` to provide fine-grained control over how the legend for that layer is generated.
+
+The customization options are defined within a `"legend"` object inside the layer's `metadata`.
+
+```json
+"metadata": {
+    "legend": {
+        "label": "Valor del Suelo 2016 [m2]",
+        "default": "Otros",
+        "custom-labels": [
+            "Hasta U$D 100",
+            "De U$D 100 as U$D 250",
+            "De U$D 250 as U$D 750",
+            "Mayor a U$D 750"
+        ]
+    }
+}
+```
+
+Within the "legend" object in a layer's metadata, the following keys are used for customization:
+
+- **label**
+  - Type: string
+  - Description: Sets the title for the legend entry. If omitted, the layer's id is used.
+
+- **default**
+  - Type: string
+  - Description: Provides a label for data points not covered by the style's expressions (e.g., interpolate, case, match).
+
+- **custom-labels**
+  - Type: array of strings
+  - Description: Supplies specific labels for the different categories or stops defined in expressions like interpolate, case, or match. The order should match the expression's stops/cases.
 
 ## Crate Modules
 
