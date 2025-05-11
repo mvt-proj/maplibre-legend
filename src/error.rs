@@ -15,6 +15,8 @@ pub enum LegendError {
     JsonFetch(ReqwestError),
     #[error("Failed to parse sprite JSON: {0}")]
     JsonParse(ReqwestError),
+    #[error("Failed to fetch url: {0}")]
+    Fetch(ReqwestError),
     #[error("Invalid JSON object: {0}")]
     InvalidJson(String),
     #[error("Invalid expression: {0}")]

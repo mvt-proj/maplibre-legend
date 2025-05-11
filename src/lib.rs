@@ -54,17 +54,16 @@ impl MapLibreLegend {
     /// # Returns
     /// - `Result<Self, LegendError>`: A `MapLibreLegend` instance if the JSON is valid,
     ///   or a `LegendError::Deserialization` if it is not.
-    pub fn new(
+    pub async fn new(
         json: &str,
         default_width: u32,
         default_height: u32,
         has_label: bool,
         include_raster: bool,
     ) -> Result<Self, LegendError> {
-        let style: Style =
-            serde_json::from_str(json).map_err(LegendError::Deserialization)?;
+        let style: Style = serde_json::from_str(json).map_err(LegendError::Deserialization)?;
         let sprite_data = if let Some(sprite_url) = &style.sprite {
-            Some(get_sprite(sprite_url)?)
+            Some(get_sprite(sprite_url).await?)
         } else {
             None
         };
