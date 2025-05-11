@@ -76,7 +76,8 @@ produces a full-page legend similar to:
 
 | style.json | style2.json | style3.json |
 |---|---|---|
-| ![combined](https://github.com/user-attachments/assets/45f11696-c5d8-499a-8ab9-8a66a2cd82b0) | ![combined](https://github.com/user-attachments/assets/d865faf8-277f-48d7-8b19-541d0f984493) | ![combined](https://github.com/user-attachments/assets/f70e3ac7-eedf-4107-8ffd-d97de18e8888) |
+| ![combined](https://github.com/user-attachments/assets/45f11696-c5d8-499a-8ab9-8a66a2cd82b0) | ![combined](https://github.com/user-attachments/assets/d865faf8-277f-48d7-8b19-541d0f984493) | ![combined_3](https://github.com/user-attachments/assets/929a0750-637a-4760-abfd-80952ad5baff)
+ |
 
 
 ## Customizing Legends with Metadata
