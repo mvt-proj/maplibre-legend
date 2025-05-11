@@ -28,12 +28,16 @@ pub struct Layer {
     #[serde(default)]
     pub paint: Option<serde_json::Value>,
     #[serde(default)]
+    pub layout: Option<serde_json::Value>,
+    #[serde(default)]
     pub metadata: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Style {
     pub layers: Vec<Layer>,
+    #[serde(default)]
+    pub sprite: Option<String>,
 }
 
 fn get_legend_object(layer: &Layer) -> Option<&serde_json::Map<String, Value>> {

@@ -2,9 +2,11 @@
 mod circle;
 mod common;
 mod default;
+mod error;
 mod fill;
 mod line;
 mod raster;
+mod symbol;
 
 // Imports of required functions and types from the modules.
 use circle::render_circle;
@@ -13,6 +15,8 @@ use default::render_default;
 use fill::render_fill;
 use line::render_line;
 use raster::render_raster;
+use symbol::render_symbol;
+
 
 /// Structure representing a MapLibre legend, used to render SVG representations
 /// of style layers based on a JSON specification.
@@ -78,6 +82,7 @@ impl MapLibreLegend {
             self.default_height,
             has_label.unwrap_or(self.has_label),
             self.include_raster,
+            &self.style.sprite,
         )
         .map(|(svg, _, _)| svg)
     }
@@ -112,6 +117,7 @@ impl MapLibreLegend {
                 self.default_height,
                 self.has_label,
                 self.include_raster,
+                &self.style.sprite,
             ) {
                 let inner = svg
                     .lines()
@@ -161,6 +167,7 @@ fn render_layer_svg(
     def_h: u32,
     render_label: bool,
     include_raster: bool,
+    sprite_url: &Option<String>,
 ) -> Option<(String, u32, u32)> {
     match layer.layer_type.as_str() {
         "fill" | "line" | "circle" => {
@@ -172,6 +179,7 @@ fn render_layer_svg(
                 _ => None,
             }
         }
+        "symbol" => render_symbol(layer, def_w, def_h, render_label, sprite_url.as_deref()),
         "raster" if include_raster => render_raster(layer, def_w, def_h, render_label),
         "raster" => None,
         _ => render_default(layer, def_w, def_h, render_label),

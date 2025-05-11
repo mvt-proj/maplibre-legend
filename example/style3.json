@@ -1,6 +1,8 @@
 {
   "version": 8,
   "name": "Interpolación y Categorización",
+  "sprite": "https://demotiles.maplibre.org/styles/osm-bright-gl-style/sprite",
+  "glyphs": "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
   "sources": {
     "dummy-source": {
       "type": "geojson",
@@ -11,6 +13,135 @@
     }
   },
   "layers": [
+    {
+      "id": "puntos-labels",
+      "type": "symbol",
+      "source": "mi-vector-source",
+      "source-layer": "puntos_capa",
+      "layout": {
+        "text-field": [
+          "get",
+          "nombre"
+        ],
+        "text-font": [
+          "Open Sans Regular"
+        ],
+        "text-size": 12,
+        "text-offset": [
+          0,
+          1.5
+        ],
+        "text-anchor": "top"
+      },
+      "paint": {
+        "text-color": "#333333",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 1
+      },
+      "metadata": {
+        "legend": {
+          "label": "Etiquetas Puntos"
+        }
+      }
+    },
+    {
+      "id": "puntos-simple",
+      "type": "symbol",
+      "source": "mi-vector-source",
+      "source-layer": "puntos_capa",
+      "layout": {
+        "icon-image": "bar_11",
+        "icon-size": 1,
+        "text-field": [
+          "get",
+          "nombre"
+        ],
+        "text-font": [
+          "Open Sans Regular"
+        ],
+        "text-size": 12,
+        "text-offset": [
+          0,
+          1.5
+        ],
+        "text-anchor": "top"
+      },
+      "paint": {
+        "text-color": "#333333",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 1
+      },
+      "metadata": {
+        "legend": {
+          "label": "Icono Simple"
+        }
+      }
+    },
+    {
+      "id": "puntos-categorizados",
+      "type": "symbol",
+      "source": "mi-vector-source",
+      "source-layer": "puntos_capa",
+      "layout": {
+        "icon-image": [
+          "match",
+          [
+            "get",
+            "tipo"
+          ],
+          "Aeropuertos",
+          "airport_11",
+          "Bares / Confiterías",
+          "bar_11",
+          "Comidas Rápidas",
+          "fast_food_11",
+          "Estaciones de Servicio",
+          "fuel_11",
+          "triangle_11"
+        ],
+        "icon-size": 1,
+        "text-field": [
+          "get",
+          "nombre"
+        ],
+        "text-font": [
+          "Open Sans Regular"
+        ],
+        "text-size": 12,
+        "text-offset": [
+          0,
+          1.5
+        ],
+        "text-anchor": "top"
+      },
+      "paint": {
+        "text-color": "#333333",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 1
+      },
+      "metadata": {
+        "legend": {
+          "label": "Tipos de puntos",
+          "items": [
+            {
+              "value": "arbol",
+              "icon": "icono-arbol",
+              "label": "Árbol"
+            },
+            {
+              "value": "poste",
+              "icon": "icono-poste",
+              "label": "Poste"
+            },
+            {
+              "value": "canasto",
+              "icon": "icono-canasto",
+              "label": "Canasto"
+            }
+          ]
+        }
+      }
+    },
     {
       "id": "densidad-poblacion",
       "type": "fill",
@@ -50,141 +181,6 @@
           ]
         },
         "alias": "Densidad Poblacional"
-      }
-    },
-    {
-      "id": "altitud",
-      "type": "fill",
-      "source": "dummy-source",
-      "paint": {
-        "fill-color": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "get",
-            "elevacion"
-          ],
-          0,
-          "#f1f8e9",
-          200,
-          "#c5e1a5",
-          1000,
-          "#9ccc65",
-          2000,
-          "#7cb342",
-          3000,
-          "#558b2f"
-        ]
-      },
-      "metadata": {
-        "legend": {
-          "label": "Altitud (msnm)",
-          "custom-labels": [
-            "Hasta 200 msnm",
-            "De 200 a 1000 msnm",
-            "De 1000 a 2000 msnm",
-            "De 2000 a 3000 msnm",
-            "Más de 3000 msnm"
-          ]
-        }
-      }
-    },
-    {
-      "id": "tipo-cultivo",
-      "type": "fill",
-      "source": "dummy-source",
-      "paint": {
-        "fill-color": [
-          "match",
-          [
-            "get",
-            "cultivo"
-          ],
-          "Maíz",
-          "#FFEB3B",
-          "Soja",
-          "#8BC34A",
-          "Trigo",
-          "#FF9800",
-          "Girasol",
-          "#FF5722",
-          "#BDBDBD"
-        ]
-      },
-      "metadata": {
-        "legend": {
-          "label": "Tipo de Cultivo",
-          "default": "Otro"
-        }
-      }
-    },
-    {
-      "id": "tipo-vialidad",
-      "type": "line",
-      "source": "dummy-source",
-      "paint": {
-        "line-color": [
-          "match",
-          [
-            "get",
-            "tipo"
-          ],
-          "Ruta Nacional",
-          "#f44336",
-          "Ruta Provincial",
-          "#2196f3",
-          "Camino Rural",
-          "#795548",
-          "#9e9e9e"
-        ],
-        "line-width": 2
-      },
-      "metadata": {
-        "legend": {
-          "label": "Tipo de Vialidad",
-          "default": "Desconocido"
-        }
-      }
-    },
-    {
-      "id": "porcentaje-forestacion",
-      "type": "fill",
-      "source": "dummy-source",
-      "paint": {
-        "fill-color": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "get",
-            "forestacion"
-          ],
-          0,
-          "#fffde7",
-          10,
-          "#fff176",
-          25,
-          "#ffd54f",
-          50,
-          "#ffb300",
-          100,
-          "#ff6f00"
-        ]
-      },
-      "metadata": {
-        "legend": {
-          "label": "Porcentaje de Forestación (%)",
-          "custom-labels": [
-            "Sin cobertura",
-            "Hasta 10%",
-            "10 a 25%",
-            "25 a 50%",
-            "Más de 50%"
-          ]
-        }
       }
     }
   ],
