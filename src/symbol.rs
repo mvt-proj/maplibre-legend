@@ -1,11 +1,11 @@
 use crate::{
-    common::{Layer, parse_expression, render_label, render_separator, get_icon_data_url},
+    common::{Layer, get_icon_data_url, parse_expression, render_label, render_separator},
     error::LegendError,
 };
+use image::DynamicImage;
 use serde_json::Value;
 use svg::Document;
 use svg::node::element::{Image, Text as SvgText};
-use image::DynamicImage;
 
 pub fn get_layout_object(layer: &Layer) -> Result<&serde_json::Map<String, Value>, LegendError> {
     let layout = layer

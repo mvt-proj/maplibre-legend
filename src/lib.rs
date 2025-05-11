@@ -10,6 +10,7 @@ mod symbol;
 
 // Imports of required functions and types from the modules.
 use circle::render_circle;
+use common::get_sprite;
 use common::{Layer, Style};
 use default::render_default;
 use error::LegendError;
@@ -19,7 +20,6 @@ use line::render_line;
 use raster::render_raster;
 use serde_json::Value;
 use symbol::render_symbol;
-use common::get_sprite;
 
 /// Structure representing a MapLibre legend, used to render SVG representations
 /// of style layers based on a JSON specification.
