@@ -8,6 +8,11 @@ This project is a work in progress. It doesn't yet support all layer types, but 
 By using each layer's `metadata` attribute, you can flexibly customize how the legend is generated—especially the labels.
 
 
+**Note:** Up to version `0.2.1`, the behavior was synchronous. Starting with version `0.3.0`, it is asynchronous.
+
+This change was necessary because using the library in an asynchronous environment (such as with Tokio) previously caused issues by blocking the thread.
+
+
 ## Features
 
 - Parse MapLibre GL style (v8) JSON into a structured `Style` model.
@@ -24,7 +29,7 @@ Add this crate to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-maplibre-legend = "0.2.0"  # replace with the latest version
+maplibre-legend = "0.3.0"  # replace with the latest version
 ````
 
 Then in your code:
@@ -37,24 +42,25 @@ use maplibre_legend::MapLibreLegend;
 
 ```rust
 use maplibre_legend::MapLibreLegend;
-use std::fs;
+use tokio::fs;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     for i in 1..=3 {
-        let style_json = fs::read_to_string(format!("style{}.json", i))?;
-        let legend = MapLibreLegend::new(&style_json, 250, 40, true, false)?;
-
+        let style_json = fs::read_to_string(format!("style{}.json", i)).await?;
+        let legend = MapLibreLegend::new(&style_json, 250, 40, true, false).await?;
         let combined = legend.render_all(true)?;
-        fs::write(format!("combined_{}.svg", i), combined)?;
+        fs::write(format!("combined_{}.svg", i), combined).await?;
     }
 
-    let style_json = fs::read_to_string("style1.json")?;
-    let legend = MapLibreLegend::new(&style_json, 250, 40, true, true)?;
+    let style_json = fs::read_to_string("style1.json").await?;
+    let legend = MapLibreLegend::new(&style_json, 250, 40, true, true).await?;
     let svg = legend.render_layer("vs2023", Some(true))?;
-    fs::write("vs2023.svg", svg)?;
+    fs::write("vs2023.svg", svg).await?;
 
     Ok(())
 }
+
 
 ```
 
