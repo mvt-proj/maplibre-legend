@@ -13,7 +13,7 @@ use circle::render_circle;
 use common::get_sprite;
 use common::{Layer, Style};
 use default::render_default;
-use error::LegendError;
+pub use error::LegendError;
 use fill::render_fill;
 use image::DynamicImage;
 use line::render_line;
