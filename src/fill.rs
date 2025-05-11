@@ -1,4 +1,7 @@
-use crate::common::{Layer, extract_color, parse_expression, render_label, render_separator};
+use crate::{
+    common::{Layer, extract_color, parse_expression, render_label, render_separator},
+    error::LegendError,
+};
 use svg::Document;
 use svg::node::element::{Rectangle, Text as SvgText};
 
@@ -8,22 +11,26 @@ pub fn render_fill(
     default_width: u32,
     default_height: u32,
     has_label: bool,
-) -> Option<(String, u32, u32)> {
-    let color_expr = paint.get("fill-color")?;
-    let cases = parse_expression(layer, color_expr);
+) -> Result<(String, u32, u32), LegendError> {
+    let color_expr = paint.get("fill-color").ok_or_else(|| {
+        LegendError::InvalidJson("Missing the 'fill-color' field in paint".to_string())
+    })?;
+    let cases = parse_expression(layer, color_expr)?;
 
     let opacity = paint
         .get("fill-opacity")
         .and_then(|v| v.as_f64())
-        .unwrap_or(1.0);
+        .unwrap_or(1.0); // Mantenemos el valor por defecto
     let fill_outline_color =
-        extract_color(paint.get("fill-outline-color")).unwrap_or("black".to_string());
+        extract_color(paint.get("fill-outline-color")).unwrap_or("black".to_string()); // Mantenemos el valor por defecto
 
     let mut init_y = 10;
-    let dynamic_height = cases
-        .as_ref()
-        .map_or(0, |cases| 20 + cases.len() as u32 * 30);
-    let height = if cases.is_some() {
+    let dynamic_height = if cases.is_empty() {
+        0
+    } else {
+        20 + cases.len() as u32 * 30
+    };
+    let height = if !cases.is_empty() {
         if has_label {
             init_y += 30;
             dynamic_height + 20
@@ -38,9 +45,9 @@ pub fn render_fill(
         .set("width", default_width)
         .set("height", height);
 
-    if let Some(cases) = cases {
+    if !cases.is_empty() {
         if has_label {
-            render_label(layer, &mut doc, Some(10), Some(20), Some(true));
+            render_label(layer, &mut doc, Some(10), Some(20), Some(true))?;
             render_separator(&mut doc, default_width, 0, 10);
         }
         for (i, (label, color)) in cases.iter().enumerate() {
@@ -73,9 +80,9 @@ pub fn render_fill(
         doc = doc.add(rect);
 
         if has_label {
-            render_label(layer, &mut doc, None, None, None);
+            render_label(layer, &mut doc, None, None, None)?;
         }
     }
 
-    Some((doc.to_string(), default_width, height))
+    Ok((doc.to_string(), default_width, height))
 }

@@ -1,6 +1,8 @@
 {
   "version": 8,
   "name": "Legend Test Style",
+   "sprite": "https://demotiles.maplibre.org/styles/osm-bright-gl-style/sprite",
+  "glyphs": "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
   "sources": {
     "dummy-source": {
       "type": "geojson",
@@ -116,7 +118,7 @@
       "type": "symbol",
       "source": "dummy-source",
       "layout": {
-        "icon-image": "school-15"
+        "icon-image": "school_11"
       },
       "metadata": {
         "legend": {
@@ -129,7 +131,7 @@
       "type": "symbol",
       "source": "dummy-source",
       "layout": {
-        "icon-image": "hospital-15"
+        "icon-image": "hospital_11"
       },
       "metadata": {
         "legend": {

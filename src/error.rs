@@ -1,15 +1,24 @@
+use image::ImageError;
+use reqwest::Error as ReqwestError;
+use serde_json::Error as SerdeJsonError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum LegendError {
     #[error("Failed to fetch sprite PNG: {0}")]
-    PngFetch(reqwest::Error),
+    PngFetch(ReqwestError),
     #[error("Failed to read sprite PNG: {0}")]
-    PngRead(reqwest::Error),
+    PngRead(ReqwestError),
     #[error("Failed to load sprite image: {0}")]
-    ImageLoad(image::ImageError),
+    ImageLoad(ImageError),
     #[error("Failed to fetch sprite JSON: {0}")]
-    JsonFetch(reqwest::Error),
+    JsonFetch(ReqwestError),
     #[error("Failed to parse sprite JSON: {0}")]
-    JsonParse(reqwest::Error),
+    JsonParse(ReqwestError),
+    #[error("Invalid JSON object: {0}")]
+    InvalidJson(String),
+    #[error("Invalid expression: {0}")]
+    InvalidExpression(String),
+    #[error("JSON deserialization failed: {0}")]
+    Deserialization(SerdeJsonError),
 }

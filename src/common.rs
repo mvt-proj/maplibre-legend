@@ -1,5 +1,6 @@
+use crate::error::LegendError;
 use serde::Deserialize;
-use serde_json::Value;
+use serde_json::{Map, Value};
 use svg::Document;
 use svg::node::element::{Line, Text as SvgText};
 
@@ -10,12 +11,15 @@ enum ExpressionKind {
 }
 
 impl ExpressionKind {
-    fn from_str(s: &str) -> Option<Self> {
+    fn from_str(s: &str) -> Result<Self, LegendError> {
         match s {
-            "match" => Some(Self::Match),
-            "case" => Some(Self::Case),
-            "interpolate" => Some(Self::Interpolate),
-            _ => None,
+            "match" => Ok(Self::Match),
+            "case" => Ok(Self::Case),
+            "interpolate" => Ok(Self::Interpolate),
+            _ => Err(LegendError::InvalidExpression(format!(
+                "Unknown expression type: {}",
+                s
+            ))),
         }
     }
 }
@@ -40,28 +44,47 @@ pub struct Style {
     pub sprite: Option<String>,
 }
 
-fn get_legend_object(layer: &Layer) -> Option<&serde_json::Map<String, Value>> {
-    layer.metadata.as_ref()?.get("legend")?.as_object()
+pub fn get_legend_object(layer: &Layer) -> Result<Option<&Map<String, Value>>, LegendError> {
+    let metadata = match layer.metadata.as_ref() {
+        Some(m) => m,
+        None => return Ok(None),
+    };
+
+    let legend = match metadata.get("legend") {
+        Some(l) => l,
+        None => return Ok(None),
+    };
+
+    let legend_obj = legend.as_object().ok_or_else(|| {
+        LegendError::InvalidJson("The 'legend' field is not an object".to_string())
+    })?;
+
+    Ok(Some(legend_obj))
 }
 
-fn get_layer_label(layer: &Layer) -> String {
-    get_legend_object(layer)
+pub fn get_layer_label(layer: &Layer) -> Result<String, LegendError> {
+    let legend = get_legend_object(layer)?;
+    let label = legend
         .and_then(|l| l.get("label"))
         .and_then(|l| l.as_str())
         .map(|s| s.to_string())
-        .unwrap_or_else(|| layer.id.clone())
+        .unwrap_or_else(|| layer.id.clone());
+    Ok(label)
 }
 
-fn get_layer_default_label(layer: &Layer) -> String {
-    get_legend_object(layer)
+pub fn get_layer_default_label(layer: &Layer) -> Result<String, LegendError> {
+    let legend = get_legend_object(layer)?;
+    let default_label = legend
         .and_then(|l| l.get("default"))
         .and_then(|l| l.as_str())
         .map(|s| s.to_string())
-        .unwrap_or_else(|| layer.id.clone())
+        .unwrap_or_else(|| layer.id.clone());
+    Ok(default_label)
 }
 
-fn get_custom_labels(layer: &Layer) -> Vec<String> {
-    get_legend_object(layer)
+pub fn get_custom_labels(layer: &Layer) -> Result<Vec<String>, LegendError> {
+    let legend = get_legend_object(layer)?;
+    let custom_labels = legend
         .and_then(|l| l.get("custom-labels"))
         .and_then(|l| l.as_array())
         .map(|arr| {
@@ -69,7 +92,8 @@ fn get_custom_labels(layer: &Layer) -> Vec<String> {
                 .filter_map(|v| v.as_str().map(|s| s.to_string()))
                 .collect::<Vec<String>>()
         })
-        .unwrap_or_default()
+        .unwrap_or_default();
+    Ok(custom_labels)
 }
 
 pub fn render_label(
@@ -78,8 +102,8 @@ pub fn render_label(
     x: Option<u32>,
     y: Option<u32>,
     is_bold: Option<bool>,
-) {
-    let label = get_layer_label(layer);
+) -> Result<(), LegendError> {
+    let label = get_layer_label(layer)?;
     let x = x.unwrap_or(55);
     let y = y.unwrap_or(25);
     let is_bold = is_bold.unwrap_or_default();
@@ -94,6 +118,7 @@ pub fn render_label(
             .set("font-weight", font_weight)
             .add(svg::node::Text::new(label)),
     );
+    Ok(())
 }
 
 pub fn render_separator(doc: &mut Document, default_width: u32, x: u32, y: u32) {
@@ -113,84 +138,122 @@ pub fn render_separator(doc: &mut Document, default_width: u32, x: u32, y: u32) 
     *doc = doc.clone().add(line);
 }
 
-pub fn extract_color(value: Option<&serde_json::Value>) -> Option<String> {
-    match value? {
-        serde_json::Value::String(s) => Some(s.clone()),
-        serde_json::Value::Array(_) => Some("#cccccc".to_string()),
-        _ => None,
+pub fn extract_color(value: Option<&serde_json::Value>) -> Result<String, LegendError> {
+    let value = value.ok_or_else(|| LegendError::InvalidJson("Missing JSON value".to_string()))?;
+    match value {
+        serde_json::Value::String(s) => Ok(s.clone()),
+        serde_json::Value::Array(_) => Ok("#cccccc".to_string()),
+        _ => Err(LegendError::InvalidJson(format!(
+            "JSON value is neither a string nor an array: {:?}",
+            value
+        ))),
     }
 }
 
-pub fn format_condition(cond: &serde_json::Value) -> String {
-    let arr = cond.as_array();
-    if let Some(expr) = arr {
-        if expr.is_empty() {
-            return "cond".to_string();
-        }
-
-        let op = expr[0].as_str().unwrap_or("");
-
-        match op {
-            "!" => {
-                if let Some(inner) = expr.get(1) {
-                    if let Some(inner_arr) = inner.as_array() {
-                        if inner_arr.get(0) == Some(&serde_json::Value::String("has".into())) {
-                            if let Some(field) = inner_arr.get(1).and_then(|v| v.as_str()) {
-                                return format!("without {}", field);
-                            }
-                        }
-                    }
-                }
-                return "undefined".to_string();
-            }
-            "has" => {
-                if let Some(field) = expr.get(1).and_then(|v| v.as_str()) {
-                    return format!("has {}", field);
-                }
-            }
-            "==" | "!=" | ">" | ">=" | "<" | "<=" => {
-                if let Some(get_expr) = expr.get(1).and_then(|v| v.as_array()) {
-                    if get_expr.get(0) == Some(&serde_json::Value::String("get".into())) {
-                        if let Some(field) = get_expr.get(1).and_then(|v| v.as_str()) {
-                            let value = match &expr[2] {
-                                serde_json::Value::String(s) => s.clone(),
-                                serde_json::Value::Number(n) => n.to_string(),
-                                serde_json::Value::Bool(b) => b.to_string(),
-                                _ => "value".to_string(),
-                            };
-                            return format!("{field} {op} {value}");
-                        }
-                    }
-                }
-            }
-            _ => {}
-        }
-    }
-    "cond".to_string()
-}
-
-fn parse_match(layer: &Layer, arr: &Vec<Value>) -> Option<Vec<(String, String)>> {
-    if arr.len() < 4 {
-        return None;
+pub fn format_condition(cond: &serde_json::Value) -> Result<String, LegendError> {
+    let arr = cond.as_array().ok_or_else(|| {
+        LegendError::InvalidExpression("The condition is not an array".to_string())
+    })?;
+    if arr.is_empty() {
+        return Ok("cond".to_string());
     }
 
-    let _field = arr.get(1).and_then(|v| {
-        if let Some(get_arr) = v.as_array() {
-            if get_arr.len() == 2 && get_arr[0] == "get" {
-                return get_arr[1].as_str();
-            }
-        }
-        None
+    let op = arr[0].as_str().ok_or_else(|| {
+        LegendError::InvalidExpression("The operator is not a string".to_string())
     })?;
 
-    let labels = get_custom_labels(layer);
+    match op {
+        "!" => {
+            if let Some(inner) = arr.get(1) {
+                if let Some(inner_arr) = inner.as_array() {
+                    if inner_arr.get(0) == Some(&serde_json::Value::String("has".into())) {
+                        if let Some(field) = inner_arr.get(1).and_then(|v| v.as_str()) {
+                            return Ok(format!("without {}", field));
+                        }
+                    }
+                }
+            }
+            Ok("undefined".to_string())
+        }
+        "has" => {
+            if let Some(field) = arr.get(1).and_then(|v| v.as_str()) {
+                Ok(format!("has {}", field))
+            } else {
+                Err(LegendError::InvalidExpression(
+                    "Missing field in 'has' expression".to_string(),
+                ))
+            }
+        }
+        "==" | "!=" | ">" | ">=" | "<" | "<=" => {
+            if let Some(get_expr) = arr.get(1).and_then(|v| v.as_array()) {
+                if get_expr.get(0) == Some(&serde_json::Value::String("get".into())) {
+                    if let Some(field) = get_expr.get(1).and_then(|v| v.as_str()) {
+                        let value = match &arr[2] {
+                            serde_json::Value::String(s) => s.clone(),
+                            serde_json::Value::Number(n) => n.to_string(),
+                            serde_json::Value::Bool(b) => b.to_string(),
+                            _ => {
+                                return Err(LegendError::InvalidExpression(
+                                    "Invalid value in comparison".to_string(),
+                                ));
+                            }
+                        };
+                        return Ok(format!("{field} {op} {value}"));
+                    }
+                }
+            }
+            Err(LegendError::InvalidExpression(
+                "Invalid comparison expression".to_string(),
+            ))
+        }
+        _ => Ok("cond".to_string()),
+    }
+}
+
+fn parse_match(layer: &Layer, arr: &Vec<Value>) -> Result<Vec<(String, String)>, LegendError> {
+    if arr.len() < 4 {
+        return Err(LegendError::InvalidExpression(
+            "Array 'match' too short".to_string(),
+        ));
+    }
+
+    let _field = arr
+        .get(1)
+        .and_then(|v| {
+            if let Some(get_arr) = v.as_array() {
+                if get_arr.len() == 2 && get_arr[0] == "get" {
+                    return get_arr[1].as_str();
+                }
+            }
+            None
+        })
+        .ok_or_else(|| {
+            LegendError::InvalidExpression("Invalid 'get' field in 'match' expression".to_string())
+        })?;
+
+    let labels = get_custom_labels(layer)?;
     let mut result = Vec::new();
     let mut i = 2;
     let mut label_index = 0;
 
     while i + 1 < arr.len() - 1 {
-        let value = arr.get(i)?.as_str()?;
-        let color = arr.get(i + 1)?.as_str().unwrap_or("#cccccc").to_string();
+        let value = arr
+            .get(i)
+            .ok_or_else(|| {
+                LegendError::InvalidExpression("Missing value in 'match' expression".to_string())
+            })?
+            .as_str()
+            .ok_or_else(|| {
+                LegendError::InvalidExpression("Value is not a string in 'match'".to_string())
+            })?;
+        let color = arr
+            .get(i + 1)
+            .ok_or_else(|| {
+                LegendError::InvalidExpression("Missing color in 'match' expression".to_string())
+            })?
+            .as_str()
+            .unwrap_or("#cccccc")
+            .to_string();
         let label = if !labels.is_empty() && label_index < labels.len() {
             labels[label_index].clone()
         } else {
@@ -205,31 +268,39 @@ fn parse_match(layer: &Layer, arr: &Vec<Value>) -> Option<Vec<(String, String)>>
         let default_label = if !labels.is_empty() && label_index < labels.len() {
             labels[label_index].clone()
         } else {
-            get_layer_default_label(layer)
+            get_layer_default_label(layer)?
         };
         result.push((default_label, default_color.to_string()));
     }
 
-    Some(result)
+    Ok(result)
 }
 
-fn parse_case(layer: &Layer, arr: &Vec<Value>) -> Option<Vec<(String, String)>> {
-    let labels = get_custom_labels(layer);
+fn parse_case(layer: &Layer, arr: &Vec<Value>) -> Result<Vec<(String, String)>, LegendError> {
+    let labels = get_custom_labels(layer)?;
     let mut result = Vec::new();
     let mut i = 1;
     let mut label_index = 0;
 
     while i + 1 < arr.len() {
-        if let (Some(cond), Some(color)) = (arr.get(i), arr.get(i + 1)) {
-            let color = color.as_str().unwrap_or("#cccccc").to_string();
-            let label = if !labels.is_empty() && label_index < labels.len() {
-                labels[label_index].clone()
-            } else {
-                format_condition(cond)
-            };
-            result.push((label, color));
-            label_index += 1;
-        }
+        let cond = arr.get(i).ok_or_else(|| {
+            LegendError::InvalidExpression("Missing condition in 'case' expression".to_string())
+        })?;
+        let color = arr
+            .get(i + 1)
+            .ok_or_else(|| {
+                LegendError::InvalidExpression("Missing color in 'case' expression".to_string())
+            })?
+            .as_str()
+            .unwrap_or("#cccccc")
+            .to_string();
+        let label = if !labels.is_empty() && label_index < labels.len() {
+            labels[label_index].clone()
+        } else {
+            format_condition(cond)?
+        };
+        result.push((label, color));
+        label_index += 1;
         i += 2;
     }
 
@@ -238,36 +309,67 @@ fn parse_case(layer: &Layer, arr: &Vec<Value>) -> Option<Vec<(String, String)>> 
             let default_label = if !labels.is_empty() && label_index < labels.len() {
                 labels[label_index].clone()
             } else {
-                get_layer_default_label(layer)
+                get_layer_default_label(layer)?
             };
             result.push((default_label, default_color.to_string()));
         }
     }
 
-    Some(result)
+    Ok(result)
 }
 
-fn parse_interpolate(layer: &Layer, arr: &Vec<Value>) -> Option<Vec<(String, String)>> {
+fn parse_interpolate(
+    layer: &Layer,
+    arr: &Vec<Value>,
+) -> Result<Vec<(String, String)>, LegendError> {
     if arr.len() < 4 {
-        return None;
+        return Err(LegendError::InvalidExpression(
+            "Array 'interpolate' too short".to_string(),
+        ));
     }
-    let labels = get_custom_labels(layer);
+    let labels = get_custom_labels(layer)?;
 
-    let field = arr.get(2).and_then(|v| {
-        if let Some(get_arr) = v.as_array() {
-            if get_arr.len() == 2 && get_arr[0] == "get" {
-                return get_arr[1].as_str();
+    let field = arr
+        .get(2)
+        .and_then(|v| {
+            if let Some(get_arr) = v.as_array() {
+                if get_arr.len() == 2 && get_arr[0] == "get" {
+                    return get_arr[1].as_str();
+                }
             }
-        }
-        None
-    })?;
+            None
+        })
+        .ok_or_else(|| {
+            LegendError::InvalidExpression(
+                "Invalid 'get' field in 'interpolate' expression".to_string(),
+            )
+        })?;
 
     let mut result = Vec::new();
     let mut i = 3;
     let mut label_index = 0;
     while i + 1 < arr.len() {
-        let val = arr.get(i)?.as_f64()?;
-        let color = arr.get(i + 1)?.as_str().unwrap_or("#cccccc").to_string();
+        let val = arr
+            .get(i)
+            .ok_or_else(|| {
+                LegendError::InvalidExpression(
+                    "Missing value in 'interpolate' expression".to_string(),
+                )
+            })?
+            .as_f64()
+            .ok_or_else(|| {
+                LegendError::InvalidExpression("Value is not a number in 'interpolate'".to_string())
+            })?;
+        let color = arr
+            .get(i + 1)
+            .ok_or_else(|| {
+                LegendError::InvalidExpression(
+                    "Missing color in 'interpolate' expression".to_string(),
+                )
+            })?
+            .as_str()
+            .unwrap_or("#cccccc")
+            .to_string();
         let label = if !labels.is_empty() && label_index < labels.len() {
             labels[label_index].clone()
         } else {
@@ -278,12 +380,47 @@ fn parse_interpolate(layer: &Layer, arr: &Vec<Value>) -> Option<Vec<(String, Str
         label_index += 1;
     }
 
-    Some(result)
+    Ok(result)
 }
 
-pub fn parse_expression(layer: &Layer, value: &serde_json::Value) -> Option<Vec<(String, String)>> {
-    let arr = value.as_array()?;
-    let first = arr.first()?.as_str()?;
+pub fn parse_expression(
+    layer: &Layer,
+    value: &serde_json::Value,
+) -> Result<Vec<(String, String)>, LegendError> {
+    if !value.is_array() {
+        let value_str = match value {
+            serde_json::Value::String(s) => s.clone(),
+            serde_json::Value::Number(n) => n.to_string(),
+            serde_json::Value::Bool(b) => b.to_string(),
+            _ => {
+                return Err(LegendError::InvalidExpression(format!(
+                    "The value is neither a string, a number, nor a boolean. Layer: {}",
+                    &layer.id
+                )));
+            }
+        };
+        let label = get_layer_label(layer)?;
+        return Ok(vec![(label, value_str)]);
+    }
+
+    let arr = value.as_array().ok_or_else(|| {
+        LegendError::InvalidExpression(format!("The value is not an array. Layer: {}", layer.id))
+    })?;
+    let first = arr
+        .first()
+        .ok_or_else(|| {
+            LegendError::InvalidExpression(format!(
+                "Empty array in the expression. Layer: {}",
+                layer.id
+            ))
+        })?
+        .as_str()
+        .ok_or_else(|| {
+            LegendError::InvalidExpression(format!(
+                "The first element is not a string. Layer: {}",
+                layer.id
+            ))
+        })?;
 
     match ExpressionKind::from_str(first)? {
         ExpressionKind::Match => parse_match(layer, arr),

@@ -1,4 +1,7 @@
-use crate::common::{Layer, render_label};
+use crate::{
+    common::{Layer, render_label},
+    error::LegendError,
+};
 use svg::Document;
 use svg::node::element::Rectangle;
 
@@ -7,7 +10,7 @@ pub fn render_raster(
     default_width: u32,
     default_height: u32,
     has_label: bool,
-) -> Option<(String, u32, u32)> {
+) -> Result<(String, u32, u32), LegendError> {
     let total_w = 30.0;
     let total_h = 20.0;
     let cols = 4;
@@ -61,9 +64,10 @@ pub fn render_raster(
             .set("stroke", "#495057")
             .set("stroke-width", 0.5),
     );
+
     if has_label {
-        render_label(layer, &mut doc, None, None, None);
+        render_label(layer, &mut doc, None, None, None)?;
     }
 
-    Some((doc.to_string(), default_width, default_height))
+    Ok((doc.to_string(), default_width, default_height))
 }
