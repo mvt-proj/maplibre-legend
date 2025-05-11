@@ -42,7 +42,7 @@ pub fn render_symbol(
         })?;
 
         if let Some(icon_name) = icon_image.as_str() {
-            let data_url = get_icon_data_url(&sprite_img, &sprite_json, icon_name)?;
+            let data_url = get_icon_data_url(sprite_img, sprite_json, icon_name)?;
             let image = Image::new()
                 .set("x", 10)
                 .set("y", 10)
@@ -62,7 +62,7 @@ pub fn render_symbol(
             }
             let mut y = if has_label { 40 } else { 10 };
             for (label, icon_name) in cases {
-                let data_url = get_icon_data_url(&sprite_img, &sprite_json, &icon_name)?;
+                let data_url = get_icon_data_url(sprite_img, sprite_json, &icon_name)?;
                 let image = Image::new()
                     .set("x", 10)
                     .set("y", y)

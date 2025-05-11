@@ -157,7 +157,7 @@ pub fn get_icon_data_url(
     let mut cursor = Cursor::new(&mut buf);
     icon_img
         .write_to(&mut cursor, ImageFormat::Png)
-        .map_err(|e| LegendError::ImageLoad(e))?;
+        .map_err( LegendError::ImageLoad)?;
 
     let base64 = STANDARD.encode(&buf);
     Ok(format!("data:image/png;base64,{}", base64))
@@ -233,7 +233,7 @@ pub fn format_condition(cond: &serde_json::Value) -> Result<String, LegendError>
         "!" => {
             if let Some(inner) = arr.get(1) {
                 if let Some(inner_arr) = inner.as_array() {
-                    if inner_arr.get(0) == Some(&serde_json::Value::String("has".into())) {
+                    if inner_arr.first() == Some(&serde_json::Value::String("has".into())) {
                         if let Some(field) = inner_arr.get(1).and_then(|v| v.as_str()) {
                             return Ok(format!("without {}", field));
                         }
@@ -253,7 +253,7 @@ pub fn format_condition(cond: &serde_json::Value) -> Result<String, LegendError>
         }
         "==" | "!=" | ">" | ">=" | "<" | "<=" => {
             if let Some(get_expr) = arr.get(1).and_then(|v| v.as_array()) {
-                if get_expr.get(0) == Some(&serde_json::Value::String("get".into())) {
+                if get_expr.first() == Some(&serde_json::Value::String("get".into())) {
                     if let Some(field) = get_expr.get(1).and_then(|v| v.as_str()) {
                         let value = match &arr[2] {
                             serde_json::Value::String(s) => s.clone(),
@@ -277,7 +277,7 @@ pub fn format_condition(cond: &serde_json::Value) -> Result<String, LegendError>
     }
 }
 
-fn parse_match(layer: &Layer, arr: &Vec<Value>) -> Result<Vec<(String, String)>, LegendError> {
+fn parse_match(layer: &Layer, arr: &[Value]) -> Result<Vec<(String, String)>, LegendError> {
     if arr.len() < 4 {
         return Err(LegendError::InvalidExpression(
             "Array 'match' too short".to_string(),
@@ -343,7 +343,7 @@ fn parse_match(layer: &Layer, arr: &Vec<Value>) -> Result<Vec<(String, String)>,
     Ok(result)
 }
 
-fn parse_case(layer: &Layer, arr: &Vec<Value>) -> Result<Vec<(String, String)>, LegendError> {
+fn parse_case(layer: &Layer, arr: &[Value]) -> Result<Vec<(String, String)>, LegendError> {
     let labels = get_custom_labels(layer)?;
     let mut result = Vec::new();
     let mut i = 1;
@@ -387,7 +387,7 @@ fn parse_case(layer: &Layer, arr: &Vec<Value>) -> Result<Vec<(String, String)>, 
 
 fn parse_interpolate(
     layer: &Layer,
-    arr: &Vec<Value>,
+    arr: &[Value],
 ) -> Result<Vec<(String, String)>, LegendError> {
     if arr.len() < 4 {
         return Err(LegendError::InvalidExpression(

@@ -62,7 +62,7 @@ impl MapLibreLegend {
         include_raster: bool,
     ) -> Result<Self, LegendError> {
         let style: Style =
-            serde_json::from_str(json).map_err(|e| LegendError::Deserialization(e))?;
+            serde_json::from_str(json).map_err(LegendError::Deserialization)?;
         let sprite_data = if let Some(sprite_url) = &style.sprite {
             Some(get_sprite(sprite_url)?)
         } else {
