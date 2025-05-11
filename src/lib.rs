@@ -14,9 +14,12 @@ use common::{Layer, Style};
 use default::render_default;
 use error::LegendError;
 use fill::render_fill;
+use image::DynamicImage;
 use line::render_line;
 use raster::render_raster;
+use serde_json::Value;
 use symbol::render_symbol;
+use common::get_sprite;
 
 /// Structure representing a MapLibre legend, used to render SVG representations
 /// of style layers based on a JSON specification.
@@ -31,6 +34,11 @@ pub struct MapLibreLegend {
     pub has_label: bool,
     /// Indicates whether raster layers should be included in rendering.
     pub include_raster: bool,
+    /// Optional sprite data used for rendering symbol layers, containing the sprite image (PNG)
+    /// and its associated JSON metadata. Populated during initialization if `style.sprite`
+    /// specifies a valid URL; otherwise, `None`. The sprite data is loaded once to optimize
+    /// rendering of multiple symbol layers.
+    sprite_data: Option<(DynamicImage, Value)>,
 }
 
 impl MapLibreLegend {
@@ -55,12 +63,18 @@ impl MapLibreLegend {
     ) -> Result<Self, LegendError> {
         let style: Style =
             serde_json::from_str(json).map_err(|e| LegendError::Deserialization(e))?;
+        let sprite_data = if let Some(sprite_url) = &style.sprite {
+            Some(get_sprite(sprite_url)?)
+        } else {
+            None
+        };
         Ok(Self {
             style,
             default_width,
             default_height,
             has_label,
             include_raster,
+            sprite_data,
         })
     }
 
@@ -88,7 +102,7 @@ impl MapLibreLegend {
             self.default_height,
             has_label.unwrap_or(self.has_label),
             self.include_raster,
-            &self.style.sprite,
+            &self.sprite_data,
         )?;
         Ok(svg)
     }
@@ -124,7 +138,7 @@ impl MapLibreLegend {
                 self.default_height,
                 self.has_label,
                 self.include_raster,
-                &self.style.sprite,
+                &self.sprite_data,
             )?;
             let inner = svg
                 .lines()
@@ -176,7 +190,7 @@ fn render_layer_svg(
     def_h: u32,
     render_label: bool,
     include_raster: bool,
-    sprite_url: &Option<String>,
+    sprite_data: &Option<(DynamicImage, Value)>,
 ) -> Result<(String, u32, u32), LegendError> {
     match layer.layer_type.as_str() {
         "fill" | "line" | "circle" => {
@@ -206,7 +220,7 @@ fn render_layer_svg(
                 ))),
             }
         }
-        "symbol" => render_symbol(layer, def_w, def_h, render_label, sprite_url.as_deref()),
+        "symbol" => render_symbol(layer, def_w, def_h, render_label, sprite_data.as_ref()),
         "raster" if include_raster => render_raster(layer, def_w, def_h, render_label),
         "raster" => Ok(("<svg></svg>".to_string(), 0, 0)),
         _ => render_default(layer, def_w, def_h, render_label),

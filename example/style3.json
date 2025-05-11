@@ -97,6 +97,24 @@
           "fast_food_11",
           "Estaciones de Servicio",
           "fuel_11",
+          "Hospitales",
+          "hospital_11",
+          "Bancos",
+          "bank_11",
+          "Parques",
+          "park_11",
+          "Farmacias",
+          "pharmacy_11",
+          "Estaciones de tren",
+          "railway_11",
+          "Centros comerciales",
+          "shop_11",
+          "Universidades",
+          "college_11",
+          "Oficinas postales",
+          "post_11",
+          "Museos",
+          "museum_11",
           "triangle_11"
         ],
         "icon-size": 1,
@@ -122,23 +140,7 @@
       "metadata": {
         "legend": {
           "label": "Tipos de puntos",
-          "items": [
-            {
-              "value": "arbol",
-              "icon": "icono-arbol",
-              "label": "Árbol"
-            },
-            {
-              "value": "poste",
-              "icon": "icono-poste",
-              "label": "Poste"
-            },
-            {
-              "value": "canasto",
-              "icon": "icono-canasto",
-              "label": "Canasto"
-            }
-          ]
+          "default": "Otros"
         }
       }
     },
