@@ -12,6 +12,7 @@ By using each layer's `metadata` attribute, you can flexibly customize how the l
 
 - Parse MapLibre GL style (v8) JSON into a structured `Style` model.
 - Render individual layer legends (fill, line, circle) as SVG snippets.
+- Symbol rendering is currently limited: it is supported only when the sprites field in style.json is a string URL, and does not support sprites defined as an array of string URLs.
 - Optionally include raster layers.
 - Render labels and customizable dimensions (`default_width`/`default_height`).
 - Stack all layers into one combined SVG with separators.
@@ -23,7 +24,7 @@ Add this crate to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-maplibre-legend = "0.1.0"  # replace with the latest version
+maplibre-legend = "0.2.0"  # replace with the latest version
 ````
 
 Then in your code:
@@ -39,18 +40,18 @@ use maplibre_legend::MapLibreLegend;
 use std::fs;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let style_json = fs::read_to_string("style.json")?;
+    for i in 1..=3 {
+        let style_json = fs::read_to_string(format!("style{}.json", i))?;
+        let legend = MapLibreLegend::new(&style_json, 250, 40, true, false)?;
 
-    let legend = MapLibreLegend::new(&style_json, 250,40, true, true)?;
-
-    /// Render a single layer
-    if let Some(svg) = legend.render_layer("vs2023", Some(true)) {
-        fs::write("vs2023.svg", svg)?;
+        let combined = legend.render_all(true)?;
+        fs::write(format!("combined_{}.svg", i), combined)?;
     }
 
-    /// Render all layers
-    let combined = legend.render_all(true);
-    fs::write("combined.svg", combined)?;
+    let style_json = fs::read_to_string("style1.json")?;
+    let legend = MapLibreLegend::new(&style_json, 250, 40, true, true)?;
+    let svg = legend.render_layer("vs2023", Some(true))?;
+    fs::write("vs2023.svg", svg)?;
 
     Ok(())
 }
@@ -118,9 +119,11 @@ Within the "legend" object in a layer's metadata, the following keys are used fo
 * **`circle`**: renders circle layers
 * **`line`**: renders line layers
 * **`fill`**: renders polygon (fill) layers
+* **`symbol`**: renders icons o T letter for symbol layers
 * **`raster`**: renders raster (tile) layers
 * **`default`**: renders a gray polygon
 * **`common`**: shared types (`Style`, `Layer`, etc.)
+* **`error`**: thiserror structure for error handling
 
 ## Contributing
 
