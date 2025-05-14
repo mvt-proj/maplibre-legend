@@ -20,7 +20,7 @@ pub fn render_line(
     let line_width = paint
         .get("line-width")
         .and_then(|v| v.as_f64())
-        .unwrap_or(3.0); // Mantenemos el valor por defecto
+        .unwrap_or(3.0);
 
     let mut init_y = 20;
     let dynamic_height = if cases.is_empty() {

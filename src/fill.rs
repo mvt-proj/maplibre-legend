@@ -20,7 +20,7 @@ pub fn render_fill(
     let opacity = paint
         .get("fill-opacity")
         .and_then(|v| v.as_f64())
-        .unwrap_or(1.0); // Mantenemos el valor por defecto
+        .unwrap_or(1.0);
     let fill_outline_color =
         extract_color(paint.get("fill-outline-color")).unwrap_or("black".to_string()); // Mantenemos el valor por defecto
 

@@ -33,10 +33,6 @@ pub fn render_symbol(
     let mut height = default_height;
 
     if let Some(icon_image) = icon_image {
-        // let sprite_url = sprite_url.ok_or_else(|| {
-        //     LegendError::InvalidJson("Missing the sprite URL for 'icon-image'".to_string())
-        // })?;
-        // let (sprite_img, sprite_json) = get_sprite(sprite_url)?;
         let (sprite_img, sprite_json) = sprite_data.ok_or_else(|| {
             LegendError::InvalidJson("Missing sprite data for 'icon-image'".to_string())
         })?;

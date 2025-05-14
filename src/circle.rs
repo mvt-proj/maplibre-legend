@@ -20,17 +20,17 @@ pub fn render_circle(
     let mut radius = paint
         .get("circle-radius")
         .and_then(|v| v.as_f64())
-        .unwrap_or(10.0); // Mantenemos el valor por defecto
+        .unwrap_or(10.0);
     if radius > 25.0 {
         radius = 25.0;
     }
 
     let stroke_color =
-        extract_color(paint.get("circle-stroke-color")).unwrap_or("black".to_string()); // Mantenemos el valor por defecto
+        extract_color(paint.get("circle-stroke-color")).unwrap_or("black".to_string());
     let stroke_width = paint
         .get("circle-stroke-width")
         .and_then(|v| v.as_f64())
-        .unwrap_or(0.0); // Mantenemos el valor por defecto
+        .unwrap_or(0.0);
 
     let mut init_y = 10;
     let dynamic_height = if cases.is_empty() {
