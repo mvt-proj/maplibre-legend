@@ -3,7 +3,7 @@ use crate::{
     error::LegendError,
 };
 use svg::Document;
-use svg::node::element::{Rectangle, Definitions, RadialGradient, Stop};
+use svg::node::element::{Definitions, RadialGradient, Rectangle, Stop};
 
 pub fn render_heatmap(
     layer: &Layer,
@@ -19,13 +19,7 @@ pub fn render_heatmap(
         .set("cx", "25%")
         .set("cy", "25%")
         .set("r", "75%");
-    let colors = [
-        "#CC0000",
-        "#FF6600",
-        "#FFFF99",
-        "#5fee00",
-        "#00ddc4",
-    ];
+    let colors = ["#CC0000", "#FF6600", "#FFFF99", "#5fee00", "#00ddc4"];
 
     for (i, color) in colors.iter().enumerate() {
         let offset = (i as f32 / (colors.len() - 1) as f32) * 100.0;
@@ -47,9 +41,7 @@ pub fn render_heatmap(
                 .set("height", total_h)
                 .set("fill", "#f8f9fa"),
         )
-        .add(
-            Definitions::new().add(gradient),
-        )
+        .add(Definitions::new().add(gradient))
         .add(
             Rectangle::new()
                 .set("x", 10)
