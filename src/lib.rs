@@ -4,6 +4,7 @@ mod common;
 mod default;
 mod error;
 mod fill;
+mod  heatmap;
 mod line;
 mod raster;
 mod symbol;
@@ -14,6 +15,7 @@ use common::get_sprite;
 use common::{Layer, Style};
 use default::render_default;
 pub use error::LegendError;
+use heatmap::render_heatmap;
 use fill::render_fill;
 use image::DynamicImage;
 use line::render_line;
@@ -219,6 +221,7 @@ fn render_layer_svg(
                 ))),
             }
         }
+        "heatmap" => render_heatmap(layer, def_w, def_h, render_label),
         "symbol" => render_symbol(layer, def_w, def_h, render_label, sprite_data.as_ref()),
         "raster" if include_raster => render_raster(layer, def_w, def_h, render_label),
         "raster" => Ok(("<svg></svg>".to_string(), 0, 0)),
