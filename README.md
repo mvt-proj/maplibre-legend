@@ -8,7 +8,7 @@ This project is a work in progress. It doesn't yet support all layer types, but 
 By using each layer's `metadata` attribute, you can flexibly customize how the legend is generated—especially the labels.
 
 
-**Note:** Up to version `0.2.1`, the behavior was synchronous. Starting with version `0.3.0`, it is asynchronous.
+**Note:** Up to version `0.2.1`, the behavior was synchronous. Starting with version `0.3.0`, it is asynchronous. **As of version 0.4.0, you can use features to explicitly define whether you need asynchronous or synchronous behavior.**
 
 This change was necessary because using the library in an asynchronous environment (such as with Tokio) previously caused issues by blocking the thread.
 
