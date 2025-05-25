@@ -19,7 +19,7 @@ pub fn render_heatmap(
         .set("cx", "25%")
         .set("cy", "25%")
         .set("r", "75%");
-    let colors = ["#CC0000", "#FF6600", "#FFFF99", "#5fee00", "#00ddc4"];
+    let colors = ["#CC0000", "#FFFF99"];
 
     for (i, color) in colors.iter().enumerate() {
         let offset = (i as f32 / (colors.len() - 1) as f32) * 100.0;
