@@ -9,9 +9,16 @@ mod line;
 mod raster;
 mod symbol;
 
+#[cfg(all(feature = "async", feature = "sync"))]
+compile_error!("Features 'async' and 'sync' cannot be enabled at the same time.");
+
 // Imports of required functions and types from the modules.
 use circle::render_circle;
-use common::get_sprite;
+// #[cfg(feature = "async")]
+// use crate::common::get_sprite_async;
+// #[cfg(feature = "sync")]
+// use crate::common::get_sprite_sync;
+use crate::common::get_sprite;
 use common::{Layer, Style};
 use default::render_default;
 pub use error::LegendError;
@@ -56,6 +63,7 @@ impl MapLibreLegend {
     /// # Returns
     /// - `Result<Self, LegendError>`: A `MapLibreLegend` instance if the JSON is valid,
     ///   or a `LegendError::Deserialization` if it is not.
+    #[cfg(feature = "async")]
     pub async fn new(
         json: &str,
         default_width: u32,
@@ -66,6 +74,42 @@ impl MapLibreLegend {
         let style: Style = serde_json::from_str(json).map_err(LegendError::Deserialization)?;
         let sprite_data = if let Some(sprite_url) = &style.sprite {
             Some(get_sprite(sprite_url).await?)
+        } else {
+            None
+        };
+        Ok(Self {
+            style,
+            default_width,
+            default_height,
+            has_label,
+            include_raster,
+            sprite_data,
+        })
+    }
+
+    /// Creates a new `MapLibreLegend` instance from a JSON string and configuration parameters.
+    ///
+    /// # Parameters
+    /// - `json`: A string containing the style in JSON format.
+    /// - `default_width`: Default width for SVG renderings.
+    /// - `default_height`: Default height for SVG renderings.
+    /// - `has_label`: Whether to render labels on layers.
+    /// - `include_raster`: Whether to include raster layers in rendering.
+    ///
+    /// # Returns
+    /// - `Result<Self, LegendError>`: A `MapLibreLegend` instance if the JSON is valid,
+    ///   or a `LegendError::Deserialization` if it is not.
+    #[cfg(feature = "sync")]
+    pub fn new(
+        json: &str,
+        default_width: u32,
+        default_height: u32,
+        has_label: bool,
+        include_raster: bool,
+    ) -> Result<Self, LegendError> {
+        let style: Style = serde_json::from_str(json).map_err(LegendError::Deserialization)?;
+        let sprite_data = if let Some(sprite_url) = &style.sprite {
+            Some(get_sprite(sprite_url)?)
         } else {
             None
         };

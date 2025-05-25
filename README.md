@@ -1,6 +1,6 @@
 # maplibre-legend
 
-A Rust crate to generate SVG legends from a [MapLibre GL style JSON][].
+A Rust crate to dynamically generate SVG layer legends from a [MapLibre GL style JSON][].
 
 Given a MapLibre style (e.g. `style.json`), this library parses all layers and produces standalone SVG symbols or a combined legend, complete with optional labels and raster entries.
 
@@ -29,8 +29,26 @@ Add this crate to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-maplibre-legend = "0.3.0"  # replace with the latest version
+maplibre-legend = "0.4"  # replace with the latest version
 ````
+
+### Features
+
+This crate provides the following features to control HTTP request behavior:
+
+* **`default`**: This enables the `async` feature by default.
+* **`async`**: (Default) Enables asynchronous operations for fetching remote resources (like images or font icons). This uses `reqwest` with its asynchronous configuration.
+    * To use this feature (which is the default), just add:
+        ```toml
+        maplibre-legend = "0.4"
+        ```
+* **`sync`**: Enables a synchronous/blocking API for fetching remote resources. This is useful for scripts or environments where an asynchronous runtime isn't required. This feature is mutually exclusive with `async` in terms of API.
+    * To use this feature, you must disable the default features and specify `sync`:
+        ```toml
+        maplibre-legend = { version = "0.4", default-features = false, features = ["sync"] }
+        ```
+
+Make sure to select the appropriate feature based on your concurrency needs.
 
 Then in your code:
 
@@ -39,6 +57,8 @@ use maplibre_legend::MapLibreLegend;
 ```
 
 ## Usage
+
+### Asynchronous Example
 
 ```rust
 use maplibre_legend::MapLibreLegend;
@@ -61,8 +81,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+### Synchronous Example
 
+```rust
+use maplibre_legend::MapLibreLegend;
+use std::fs;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    for i in 1..=4 {
+        let style_json = fs::read_to_string(format!("style{}.json", i))?;
+        let legend = MapLibreLegend::new(&style_json, 250, 40, true, false)?;
+        let combined = legend.render_all(true)?;
+        fs::write(format!("combined_{}.svg", i), combined)?;
+    }
+
+    let style_json = fs::read_to_string("style1.json")?;
+    let legend = MapLibreLegend::new(&style_json, 250, 40, true, true)?;
+    let svg = legend.render_layer("vs2023", Some(true))?;
+    fs::write("vs2023.svg", svg)?;
+
+    Ok(())
+}
 ```
+
 
 ## Examples
 
@@ -127,7 +168,8 @@ Within the "legend" object in a layer's metadata, the following keys are used fo
 * **`line`**: renders line layers
 * **`fill`**: renders polygon (fill) layers
 * **`symbol`**: renders icons o T letter for symbol layers
-* **`raster`**: renders raster (tile) layers
+* **`raster`**: renders raster layers
+* **`heatmap`**: renders heatmap layers
 * **`default`**: renders a gray polygon
 * **`common`**: shared types (`Style`, `Layer`, etc.)
 * **`error`**: thiserror structure for error handling

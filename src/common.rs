@@ -1,7 +1,6 @@
 use crate::error::LegendError;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use image::{DynamicImage, GenericImageView, ImageFormat};
-use reqwest::Client;
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use std::io::Cursor;
@@ -100,8 +99,9 @@ pub fn get_custom_labels(layer: &Layer) -> Result<Vec<String>, LegendError> {
     Ok(custom_labels)
 }
 
+#[cfg(feature = "async")]
 pub async fn get_sprite(sprite_url: &str) -> Result<(DynamicImage, Value), LegendError> {
-    let client = Client::new();
+    let client = reqwest::Client::new();
 
     let png_url_2x = format!("{}@2x.png", sprite_url);
     let png_url = format!("{}.png", sprite_url);
@@ -128,6 +128,31 @@ pub async fn get_sprite(sprite_url: &str) -> Result<(DynamicImage, Value), Legen
             .map_err(LegendError::JsonFetch)?,
     };
     let sprite_json: Value = json_response.json().await.map_err(LegendError::JsonParse)?;
+
+    Ok((sprite_img, sprite_json))
+}
+
+#[cfg(feature = "sync")]
+pub fn get_sprite(sprite_url: &str) -> Result<(DynamicImage, Value), LegendError> {
+    let client = reqwest::blocking::Client::new();
+
+    let png_url_2x = format!("{}@2x.png", sprite_url);
+    let png_url = format!("{}.png", sprite_url);
+    let json_url_2x = format!("{}@2x.json", sprite_url);
+    let json_url = format!("{}.json", sprite_url);
+
+    let png_response = match client.get(&png_url_2x).send() {
+        Ok(resp) if resp.status().is_success() => resp,
+        _ => client.get(&png_url).send().map_err(LegendError::PngFetch)?,
+    };
+    let png_data = png_response.bytes().map_err(LegendError::PngRead)?;
+    let sprite_img = image::load_from_memory(&png_data).map_err(LegendError::ImageLoad)?;
+
+    let json_response = match client.get(&json_url_2x).send() {
+        Ok(resp) if resp.status().is_success() => resp,
+        _ => client.get(&json_url).send().map_err(LegendError::JsonFetch)?,
+    };
+    let sprite_json: Value = json_response.json().map_err(LegendError::JsonParse)?;
 
     Ok((sprite_img, sprite_json))
 }
