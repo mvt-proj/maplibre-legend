@@ -30,8 +30,7 @@ Add this crate to your `Cargo.toml`:
 ```toml
 [dependencies]
 maplibre-legend = "0.4"  # replace with the latest version
-````
-
+```
 ### Features
 
 This crate provides the following features to control HTTP request behavior:
@@ -80,6 +79,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+```
 
 ### Synchronous Example
 
