@@ -11,6 +11,7 @@ enum ExpressionKind {
     Match,
     Case,
     Interpolate,
+    Step,
 }
 
 impl ExpressionKind {
@@ -19,6 +20,7 @@ impl ExpressionKind {
             "match" => Ok(Self::Match),
             "case" => Ok(Self::Case),
             "interpolate" => Ok(Self::Interpolate),
+            "step" => Ok(Self::Step),
             _ => Err(LegendError::InvalidExpression(format!(
                 "Unknown expression type: {}",
                 s
@@ -480,6 +482,130 @@ fn parse_interpolate(layer: &Layer, arr: &[Value]) -> Result<Vec<(String, String
     Ok(result)
 }
 
+fn parse_step(layer: &Layer, arr: &[Value]) -> Result<Vec<(String, String)>, LegendError> {
+    // Minimum length: ["step", input, base_output]
+    if arr.len() < 3 {
+        return Err(LegendError::InvalidExpression(
+            "Array 'step' too short: must have at least operator, input, and base output".to_string(),
+        ));
+    }
+
+    // Allow even or odd lengths, as long as pairs are valid
+    if arr.len() > 3 && arr.len() % 2 == 0 {
+        return Err(LegendError::InvalidExpression(
+            "Array 'step' has incomplete threshold-color pair".to_string(),
+        ));
+    }
+
+    let labels = get_custom_labels(layer)?;
+
+    // Extract the field from input expression (e.g., ["get", "cantidad"])
+    let field = arr
+        .get(1)
+        .and_then(|v| {
+            if let Some(get_arr) = v.as_array() {
+                if get_arr.len() == 2 && get_arr[0] == "get" {
+                    return get_arr[1].as_str();
+                }
+            }
+            None
+        })
+        .ok_or_else(|| {
+            LegendError::InvalidExpression(
+                "Invalid 'get' field in 'step' expression".to_string(),
+            )
+        })?;
+
+    let mut result = Vec::new();
+    let mut label_index = 0;
+
+    // Handle base output (for values below the first threshold, if any)
+    let base_color = arr
+        .get(2)
+        .ok_or_else(|| {
+            LegendError::InvalidExpression(
+                "Missing base color in 'step' expression".to_string(),
+            )
+        })?
+        .as_str()
+        .ok_or_else(|| {
+            LegendError::InvalidExpression(
+                "Base color is not a string in 'step'".to_string(),
+            )
+        })?
+        .to_string();
+
+    let base_label = if arr.len() == 3 {
+        // If no thresholds, use layer label or default
+        if !labels.is_empty() && label_index < labels.len() {
+            labels[label_index].clone()
+        } else {
+            get_layer_label(layer)?
+        }
+    } else {
+        // Use first threshold for base label
+        if !labels.is_empty() && label_index < labels.len() {
+            labels[label_index].clone()
+        } else {
+            format!("{} < {}", field, arr[3].as_f64().unwrap_or(0.0))
+        }
+    };
+    result.push((base_label, base_color));
+    label_index += 1;
+
+    // Process threshold-color pairs
+    let mut i = 3;
+    while i + 1 < arr.len() {
+        let threshold = arr
+            .get(i)
+            .ok_or_else(|| {
+                LegendError::InvalidExpression(
+                    "Missing threshold in 'step' expression".to_string(),
+                )
+            })?
+            .as_f64()
+            .ok_or_else(|| {
+                LegendError::InvalidExpression(
+                    "Threshold is not a number in 'step'".to_string(),
+                )
+            })?;
+        let color = arr
+            .get(i + 1)
+            .ok_or_else(|| {
+                LegendError::InvalidExpression(
+                    "Missing color in 'step' expression".to_string(),
+                )
+            })?
+            .as_str()
+            .ok_or_else(|| {
+                LegendError::InvalidExpression(
+                    "Color is not a string in 'step'".to_string(),
+                )
+            })?
+            .to_string();
+
+        let next_threshold = if i + 2 < arr.len() {
+            arr[i + 2].as_f64()
+        } else {
+            None
+        };
+
+        let label = if !labels.is_empty() && label_index < labels.len() {
+            labels[label_index].clone()
+        } else if let Some(next) = next_threshold {
+            format!("{} ≤ {} < {}", threshold, field, next)
+        } else {
+            format!("{} ≥ {}", field, threshold)
+        };
+
+        result.push((label, color));
+        label_index += 1;
+        i += 2;
+    }
+
+    Ok(result)
+}
+
 pub fn parse_expression(
     layer: &Layer,
     value: &serde_json::Value,
@@ -523,5 +649,6 @@ pub fn parse_expression(
         ExpressionKind::Match => parse_match(layer, arr),
         ExpressionKind::Case => parse_case(layer, arr),
         ExpressionKind::Interpolate => parse_interpolate(layer, arr),
+        ExpressionKind::Step => parse_step(layer, arr),
     }
 }

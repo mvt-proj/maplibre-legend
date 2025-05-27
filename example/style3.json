@@ -14,6 +14,69 @@
   },
   "layers": [
     {
+      "id": "recetas-1",
+      "type": "fill",
+      "source": "http://127.0.0.1:5887/services/tiles/public:recetas/{z}/{x}/{y}.pbf",
+      "source-layer": "recetas",
+      "paint": {
+        "fill-color": [
+          "step",
+          [
+            "get",
+            "cantidad"
+          ],
+          "#fdd1cd",
+          2,
+          "#fbb2c4",
+          3,
+          "#f986b4",
+          4,
+          "#e45dac",
+          5,
+          "#be3498"
+        ],
+        "fill-opacity": 0.98
+      }
+    },
+    {
+      "id": "recetas-2",
+      "type": "fill",
+      "source": "http://127.0.0.1:5887/services/tiles/public:recetas/{z}/{x}/{y}.pbf",
+      "source-layer": "recetas",
+      "paint": {
+        "fill-color": [
+          "step",
+          [
+            "get",
+            "cantidad"
+          ],
+          "#fdd1cd",
+          2,
+          "#fbb2c4",
+          3,
+          "#f986b4",
+          4,
+          "#e45dac",
+          5,
+          "#be3498"
+        ],
+        "fill-opacity": 0.98
+      },
+      "metadata": {
+        "legend": {
+          "label": "Recetas Fitosanitarias",
+          "custom-labels": [
+            "1 receta",
+            "2 recetas",
+            "3 recetas",
+            "4 recetas",
+            "5 o más recetas"
+          ]
+        }
+      }
+    },
+
+    {
       "id": "puntos-labels",
       "type": "symbol",
       "source": "mi-vector-source",
