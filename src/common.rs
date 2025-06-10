@@ -252,6 +252,48 @@ pub fn extract_color(value: Option<&serde_json::Value>) -> Result<String, Legend
     }
 }
 
+fn extract_field(expr: &serde_json::Value) -> Result<&str, LegendError> {
+    if let Some(arr) = expr.as_array() {
+        if arr.is_empty() {
+            return Err(LegendError::InvalidExpression(
+                "Empty expression array".to_string(),
+            ));
+        }
+        let op = arr[0]
+            .as_str()
+            .ok_or_else(|| LegendError::InvalidExpression("Operator is not a string".to_string()))?;
+        match op {
+            "get" => {
+                if arr.len() != 2 {
+                    return Err(LegendError::InvalidExpression(
+                        "Invalid 'get' expression: must have exactly one argument".to_string(),
+                    ));
+                }
+                arr[1]
+                    .as_str()
+                    .ok_or_else(|| LegendError::InvalidExpression(
+                        "Field name in 'get' is not a string".to_string(),
+                    ))
+            }
+            "downcase" | "upcase" | "to-string" | "to-number" => {
+                if arr.len() != 2 {
+                    return Err(LegendError::InvalidExpression(
+                        format!("Invalid '{}' expression: must have exactly one argument", op),
+                    ));
+                }
+                extract_field(&arr[1])
+            }
+            _ => Err(LegendError::InvalidExpression(
+                format!("Unsupported operator in field extraction: {}", op),
+            )),
+        }
+    } else {
+        Err(LegendError::InvalidExpression(
+            "Expression is not an array".to_string(),
+        ))
+    }
+}
+
 pub fn format_condition(cond: &serde_json::Value) -> Result<String, LegendError> {
     let arr = cond.as_array().ok_or_else(|| {
         LegendError::InvalidExpression("The condition is not an array".to_string())
@@ -287,26 +329,29 @@ pub fn format_condition(cond: &serde_json::Value) -> Result<String, LegendError>
             }
         }
         "==" | "!=" | ">" | ">=" | "<" | "<=" => {
-            if let Some(get_expr) = arr.get(1).and_then(|v| v.as_array()) {
-                if get_expr.first() == Some(&serde_json::Value::String("get".into())) {
-                    if let Some(field) = get_expr.get(1).and_then(|v| v.as_str()) {
-                        let value = match &arr[2] {
-                            serde_json::Value::String(s) => s.clone(),
-                            serde_json::Value::Number(n) => n.to_string(),
-                            serde_json::Value::Bool(b) => b.to_string(),
-                            _ => {
-                                return Err(LegendError::InvalidExpression(
-                                    "Invalid value in comparison".to_string(),
-                                ));
-                            }
-                        };
-                        return Ok(format!("{field} {op} {value}"));
-                    }
-                }
+            if arr.len() < 3 {
+                return Err(LegendError::InvalidExpression(
+                    "Comparison expression requires at least three elements".to_string(),
+                ));
             }
-            Err(LegendError::InvalidExpression(
-                "Invalid comparison expression".to_string(),
-            ))
+            let field_expr = &arr[1];
+            let field = extract_field(field_expr).map_err(|e| {
+                LegendError::InvalidExpression(format!(
+                    "Invalid field expression in comparison: {}",
+                    e
+                ))
+            })?;
+            let value = match &arr[2] {
+                serde_json::Value::String(s) => s.clone(),
+                serde_json::Value::Number(n) => n.to_string(),
+                serde_json::Value::Bool(b) => b.to_string(),
+                _ => {
+                    return Err(LegendError::InvalidExpression(
+                        "Invalid value in comparison".to_string(),
+                    ));
+                }
+            };
+            Ok(format!("{} {} {}", field, op, value))
         }
         _ => Ok("cond".to_string()),
     }
@@ -319,19 +364,12 @@ fn parse_match(layer: &Layer, arr: &[Value]) -> Result<Vec<(String, String)>, Le
         ));
     }
 
-    let _field = arr
-        .get(1)
-        .and_then(|v| {
-            if let Some(get_arr) = v.as_array() {
-                if get_arr.len() == 2 && get_arr[0] == "get" {
-                    return get_arr[1].as_str();
-                }
-            }
-            None
-        })
-        .ok_or_else(|| {
-            LegendError::InvalidExpression("Invalid 'get' field in 'match' expression".to_string())
-        })?;
+    let _field = extract_field(&arr[1]).map_err(|e| {
+        LegendError::InvalidExpression(format!(
+            "Invalid input expression in 'match': {}",
+            e
+        ))
+    })?;
 
     let labels = get_custom_labels(layer)?;
     let mut result = Vec::new();
@@ -650,5 +688,58 @@ pub fn parse_expression(
         ExpressionKind::Case => parse_case(layer, arr),
         ExpressionKind::Interpolate => parse_interpolate(layer, arr),
         ExpressionKind::Step => parse_step(layer, arr),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_extract_field() {
+        assert_eq!(
+            extract_field(&json!(["get", "estado"])).unwrap(),
+            "estado"
+        );
+        assert_eq!(
+            extract_field(&json!(["downcase", ["get", "estado"]])).unwrap(),
+            "estado"
+        );
+        assert_eq!(
+            extract_field(&json!(["upcase", ["downcase", ["get", "estado"]]])).unwrap(),
+            "estado"
+        );
+        assert!(extract_field(&json!(["downcase", ["invalid"]])).is_err());
+    }
+
+    #[test]
+    fn test_parse_match_with_downcase() {
+        let layer = json!({
+            "id": "test",
+            "type": "fill",
+            "paint": {
+                "fill-color": [
+                    "match",
+                    ["downcase", ["get", "estado"]],
+                    "baldío",
+                    "#a2d0a4",
+                    "#91836f"
+                ],
+            },
+            "metadata": {
+                "legend": {
+                    "label": "Test",
+                    "custom-labels": ["Baldio"],
+                    "default": "Otras"
+                }
+            }
+        });
+        let layer: Layer = serde_json::from_value(layer).unwrap();
+        let result = parse_match(&layer.clone(), layer.paint.unwrap()["fill-color"].as_array().unwrap());
+        assert_eq!(
+            result.expect("Failed to parse match expression"),
+            vec![(String::from("Baldio"), String::from("#a2d0a4")), (String::from("Otras"), String::from("#91836f"))]
+        );
     }
 }
