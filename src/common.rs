@@ -357,6 +357,65 @@ pub fn format_condition(cond: &serde_json::Value) -> Result<String, LegendError>
     }
 }
 
+// fn parse_match(layer: &Layer, arr: &[Value]) -> Result<Vec<(String, String)>, LegendError> {
+//     if arr.len() < 4 {
+//         return Err(LegendError::InvalidExpression(
+//             "Array 'match' too short".to_string(),
+//         ));
+//     }
+//
+//     let _field = extract_field(&arr[1]).map_err(|e| {
+//         LegendError::InvalidExpression(format!(
+//             "Invalid input expression in 'match': {}",
+//             e
+//         ))
+//     })?;
+//
+//     let labels = get_custom_labels(layer)?;
+//     let mut result = Vec::new();
+//     let mut i = 2;
+//     let mut label_index = 0;
+//
+//     while i + 1 < arr.len() - 1 {
+//         let value = arr
+//             .get(i)
+//             .ok_or_else(|| {
+//                 LegendError::InvalidExpression("Missing value in 'match' expression".to_string())
+//             })?
+//             .as_str()
+//             .ok_or_else(|| {
+//                 LegendError::InvalidExpression("Value is not a string in 'match'".to_string())
+//             })?;
+//         let color = arr
+//             .get(i + 1)
+//             .ok_or_else(|| {
+//                 LegendError::InvalidExpression("Missing color in 'match' expression".to_string())
+//             })?
+//             .as_str()
+//             .unwrap_or("#cccccc")
+//             .to_string();
+//         let label = if !labels.is_empty() && label_index < labels.len() {
+//             labels[label_index].clone()
+//         } else {
+//             value.to_string()
+//         };
+//         result.push((label, color));
+//         i += 2;
+//         label_index += 1;
+//     }
+//
+//     if let Some(default_color) = arr.last().and_then(|v| v.as_str()) {
+//         let default_label = if !labels.is_empty() && label_index < labels.len() {
+//             labels[label_index].clone()
+//         } else {
+//             get_layer_default_label(layer)?
+//         };
+//         result.push((default_label, default_color.to_string()));
+//     }
+//
+//     Ok(result)
+// }
+
 fn parse_match(layer: &Layer, arr: &[Value]) -> Result<Vec<(String, String)>, LegendError> {
     if arr.len() < 4 {
         return Err(LegendError::InvalidExpression(
@@ -377,15 +436,19 @@ fn parse_match(layer: &Layer, arr: &[Value]) -> Result<Vec<(String, String)>, Le
     let mut label_index = 0;
 
     while i + 1 < arr.len() - 1 {
-        let value = arr
-            .get(i)
-            .ok_or_else(|| {
-                LegendError::InvalidExpression("Missing value in 'match' expression".to_string())
-            })?
-            .as_str()
-            .ok_or_else(|| {
-                LegendError::InvalidExpression("Value is not a string in 'match'".to_string())
-            })?;
+        let value = arr.get(i).ok_or_else(|| {
+            LegendError::InvalidExpression("Missing value in 'match' expression".to_string())
+        })?;
+        // Convertir el valor a string (soporta strings y números)
+        let value_str = match value {
+            Value::String(s) => s.clone(),
+            Value::Number(n) => n.to_string(),
+            _ => {
+                return Err(LegendError::InvalidExpression(
+                    "Value is not a string or number in 'match'".to_string(),
+                ))
+            }
+        };
         let color = arr
             .get(i + 1)
             .ok_or_else(|| {
@@ -397,7 +460,7 @@ fn parse_match(layer: &Layer, arr: &[Value]) -> Result<Vec<(String, String)>, Le
         let label = if !labels.is_empty() && label_index < labels.len() {
             labels[label_index].clone()
         } else {
-            value.to_string()
+            value_str
         };
         result.push((label, color));
         i += 2;

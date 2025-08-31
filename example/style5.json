@@ -1,0 +1,53 @@
+{
+  "version": 8,
+  "name": "Interpolación y Categorización",
+  "sprite": "https://demotiles.maplibre.org/styles/osm-bright-gl-style/sprite",
+  "glyphs": "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+  "sources": {
+    "dummy-source": {
+      "type": "geojson",
+      "data": {
+        "type": "FeatureCollection",
+        "features": []
+      }
+    }
+  },
+  "layers": [
+    {
+      "id": "parcelas",
+      "type": "fill",
+      "source": "src_catastro",
+      "source-layer": "parcelas",
+      "layout": {},
+      "paint": {
+        "fill-color": [
+          "match",
+          [
+            "get",
+            "destino"
+          ],
+          1,
+          "#ecc89a",
+          2,
+          "#f1ff69",
+          3,
+          "#37ff5f",
+          4,
+          "#db7878",
+          5,
+          "#698ed8",
+          6,
+          "#86497d",
+          7,
+          "#dfc0e9",
+          "#cccccc"
+        ],
+        "fill-outline-color": "#f7f7f7",
+        "fill-opacity": 0.8
+      }
+    }
+  ],
+  "metadata": {
+    "generated": "legend test with interpolation and categories"
+  }
+}

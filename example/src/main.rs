@@ -3,7 +3,7 @@ use tokio::fs;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    for i in 1..=4 {
+    for i in 1..=5 {
         let style_json = fs::read_to_string(format!("style{}.json", i)).await?;
         let legend = MapLibreLegend::new(&style_json, 250, 40, true, false).await?;
         let combined = legend.render_all(true)?;
