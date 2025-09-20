@@ -14,6 +14,16 @@
   },
   "layers": [
     {
+      "id": "parcelas-fill",
+      "type": "fill",
+      "source": "src_vector_tiles",
+      "source-layer": "parcelas",
+      "paint": {
+        "fill-color": "#ff6600",
+        "fill-opacity": 0.8
+      }
+    },
+    {
       "id": "parcelas",
       "type": "fill",
       "source": "src_catastro",
@@ -44,6 +54,49 @@
         ],
         "fill-outline-color": "#f7f7f7",
         "fill-opacity": 0.8
+      }
+    },
+    {
+      "id": "divergencia",
+      "type": "fill",
+      "source": "src_catastro",
+      "source-layer": "divergencia",
+      "layout": {},
+      "paint": {
+        "fill-color": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "get",
+            "rendimiento"
+          ],
+          -20,
+          "#d7191c",
+          -10,
+          "#fdae61",
+          0,
+          "#ffffbf",
+          10,
+          "#abd9e9",
+          20,
+          "#2c7bb6"
+        ],
+        "fill-outline-color": "#f7f7f7",
+        "fill-opacity": 0.8
+      },
+      "metadata": {
+        "legend": {
+          "label": "Diferencia de Rendimiento",
+          "custom-labels": [
+            "Muy negativa",
+            "Negativa",
+            "Neutra",
+            "Positiva",
+            "Muy positiva"
+          ]
+        }
       }
     }
   ],
