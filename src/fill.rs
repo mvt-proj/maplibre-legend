@@ -22,7 +22,7 @@ pub fn render_fill(
         .and_then(|v| v.as_f64())
         .unwrap_or(1.0);
     let fill_outline_color =
-        extract_color(paint.get("fill-outline-color")).unwrap_or("black".to_string()); // Mantenemos el valor por defecto
+        extract_color(paint.get("fill-outline-color")).unwrap_or("black".to_string());
 
     let mut init_y = 10;
     let dynamic_height = if cases.is_empty() {
