@@ -1,5 +1,5 @@
 use crate::{
-    common::{Layer, extract_color, parse_expression, render_label, render_separator},
+    common::{Layer, extract_color, parse_expression, render_label, render_separator, get_fill_and_opacity},
     error::LegendError,
 };
 use svg::Document;
@@ -16,14 +16,12 @@ pub fn render_fill(
         LegendError::InvalidJson("Missing the 'fill-color' field in paint".to_string())
     })?;
     let cases = parse_expression(layer, color_expr)?;
-
     let opacity = paint
         .get("fill-opacity")
         .and_then(|v| v.as_f64())
         .unwrap_or(1.0);
     let fill_outline_color =
         extract_color(paint.get("fill-outline-color")).unwrap_or("black".to_string());
-
     let mut init_y = 10;
     let dynamic_height = if cases.is_empty() {
         0
@@ -40,11 +38,9 @@ pub fn render_fill(
     } else {
         default_height
     };
-
     let mut doc = Document::new()
         .set("width", default_width)
         .set("height", height);
-
     if !cases.is_empty() {
         if has_label {
             render_label(layer, &mut doc, Some(10), Some(20), Some(true))?;
@@ -52,13 +48,16 @@ pub fn render_fill(
         }
         for (i, (label, color)) in cases.iter().enumerate() {
             let y = init_y + i as i32 * 30;
+            let (fill_value, effective_opacity) = get_fill_and_opacity(color, opacity);
             let rect = Rectangle::new()
                 .set("x", 10)
                 .set("y", y)
                 .set("width", 30)
                 .set("height", 20)
-                .set("fill", color.as_str())
-                .set("fill-opacity", opacity);
+                .set("fill", fill_value.as_str())
+                .set("fill-opacity", effective_opacity)
+                .set("stroke", fill_outline_color.as_str())
+                .set("stroke-width", "1");
             let text = SvgText::new("")
                 .set("x", 45)
                 .set("y", y + 15)
@@ -69,20 +68,20 @@ pub fn render_fill(
         }
     } else {
         let color = extract_color(Some(color_expr))?;
+        let (fill_value, effective_opacity) = get_fill_and_opacity(&color, opacity);
         let rect = Rectangle::new()
             .set("x", 10)
             .set("y", 10)
             .set("width", 30)
             .set("height", 20)
-            .set("fill", color)
-            .set("fill-opacity", opacity)
-            .set("stroke", fill_outline_color);
+            .set("fill", fill_value)
+            .set("fill-opacity", effective_opacity)
+            .set("stroke", fill_outline_color)
+            .set("stroke-width", "1");
         doc = doc.add(rect);
-
         if has_label {
             render_label(layer, &mut doc, None, None, None)?;
         }
     }
-
     Ok((doc.to_string(), default_width, height))
 }

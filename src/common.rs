@@ -240,6 +240,30 @@ pub fn render_separator(doc: &mut Document, default_width: u32, x: u32, y: u32) 
     *doc = doc.clone().add(line);
 }
 
+pub fn get_fill_and_opacity(color: &str, base_opacity: f64) -> (String, f64) {
+    let trimmed = color.trim_start_matches('#');
+    let len = trimmed.len();
+    if len == 6 {
+        (format!("#{}", trimmed), base_opacity)
+    } else if len == 8 {
+        let rgb = &trimmed[0..6];
+        let alpha_hex = &trimmed[6..8];
+        let alpha = match u8::from_str_radix(alpha_hex, 16) {
+            Ok(val) => val as f64 / 255.0,
+            Err(_) => 1.0,
+        };
+        let effective = alpha * base_opacity;
+        if effective == 0.0 {
+            ("none".to_string(), 1.0)
+        } else {
+            (format!("#{}", rgb), effective)
+        }
+    } else {
+        // Fallback for non-hex or invalid; assume opaque
+        (color.to_string(), base_opacity)
+    }
+}
+
 pub fn extract_color(value: Option<&serde_json::Value>) -> Result<String, LegendError> {
     let value = value.ok_or_else(|| LegendError::InvalidJson("Missing JSON value".to_string()))?;
     match value {
