@@ -1,5 +1,8 @@
 use crate::{
-    common::{Layer, extract_color, parse_expression, render_label, render_separator, get_fill_and_opacity},
+    common::{
+        Layer, extract_color, get_fill_and_opacity, parse_expression, render_label,
+        render_separator,
+    },
     error::LegendError,
 };
 use svg::Document;

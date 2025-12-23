@@ -152,7 +152,10 @@ pub fn get_sprite(sprite_url: &str) -> Result<(DynamicImage, Value), LegendError
 
     let json_response = match client.get(&json_url_2x).send() {
         Ok(resp) if resp.status().is_success() => resp,
-        _ => client.get(&json_url).send().map_err(LegendError::JsonFetch)?,
+        _ => client
+            .get(&json_url)
+            .send()
+            .map_err(LegendError::JsonFetch)?,
     };
     let sprite_json: Value = json_response.json().map_err(LegendError::JsonParse)?;
 
@@ -283,9 +286,9 @@ fn extract_field(expr: &serde_json::Value) -> Result<&str, LegendError> {
                 "Empty expression array".to_string(),
             ));
         }
-        let op = arr[0]
-            .as_str()
-            .ok_or_else(|| LegendError::InvalidExpression("Operator is not a string".to_string()))?;
+        let op = arr[0].as_str().ok_or_else(|| {
+            LegendError::InvalidExpression("Operator is not a string".to_string())
+        })?;
         match op {
             "get" => {
                 if arr.len() != 2 {
@@ -293,23 +296,25 @@ fn extract_field(expr: &serde_json::Value) -> Result<&str, LegendError> {
                         "Invalid 'get' expression: must have exactly one argument".to_string(),
                     ));
                 }
-                arr[1]
-                    .as_str()
-                    .ok_or_else(|| LegendError::InvalidExpression(
+                arr[1].as_str().ok_or_else(|| {
+                    LegendError::InvalidExpression(
                         "Field name in 'get' is not a string".to_string(),
-                    ))
+                    )
+                })
             }
             "downcase" | "upcase" | "to-string" | "to-number" => {
                 if arr.len() != 2 {
-                    return Err(LegendError::InvalidExpression(
-                        format!("Invalid '{}' expression: must have exactly one argument", op),
-                    ));
+                    return Err(LegendError::InvalidExpression(format!(
+                        "Invalid '{}' expression: must have exactly one argument",
+                        op
+                    )));
                 }
                 extract_field(&arr[1])
             }
-            _ => Err(LegendError::InvalidExpression(
-                format!("Unsupported operator in field extraction: {}", op),
-            )),
+            _ => Err(LegendError::InvalidExpression(format!(
+                "Unsupported operator in field extraction: {}",
+                op
+            ))),
         }
     } else {
         Err(LegendError::InvalidExpression(
@@ -332,15 +337,14 @@ pub fn format_condition(cond: &serde_json::Value) -> Result<String, LegendError>
 
     match op {
         "!" => {
-            if let Some(inner) = arr.get(1) {
-                if let Some(inner_arr) = inner.as_array() {
-                    if inner_arr.first() == Some(&serde_json::Value::String("has".into())) {
-                        if let Some(field) = inner_arr.get(1).and_then(|v| v.as_str()) {
-                            return Ok(format!("without {}", field));
-                        }
-                    }
-                }
+            if let Some(inner) = arr.get(1)
+                && let Some(inner_arr) = inner.as_array()
+                && inner_arr.first() == Some(&serde_json::Value::String("has".into()))
+                && let Some(field) = inner_arr.get(1).and_then(|v| v.as_str())
+            {
+                return Ok(format!("without {}", field));
             }
+
             Ok("undefined".to_string())
         }
         "has" => {
@@ -389,10 +393,7 @@ fn parse_match(layer: &Layer, arr: &[Value]) -> Result<Vec<(String, String)>, Le
     }
 
     let _field = extract_field(&arr[1]).map_err(|e| {
-        LegendError::InvalidExpression(format!(
-            "Invalid input expression in 'match': {}",
-            e
-        ))
+        LegendError::InvalidExpression(format!("Invalid input expression in 'match': {}", e))
     })?;
 
     let labels = get_custom_labels(layer)?;
@@ -410,7 +411,7 @@ fn parse_match(layer: &Layer, arr: &[Value]) -> Result<Vec<(String, String)>, Le
             _ => {
                 return Err(LegendError::InvalidExpression(
                     "Value is not a string or number in 'match'".to_string(),
-                ))
+                ));
             }
         };
         let color = arr
@@ -471,15 +472,15 @@ fn parse_case(layer: &Layer, arr: &[Value]) -> Result<Vec<(String, String)>, Leg
         i += 2;
     }
 
-    if arr.len() % 2 == 0 {
-        if let Some(default_color) = arr.last().and_then(|v| v.as_str()) {
-            let default_label = if !labels.is_empty() && label_index < labels.len() {
-                labels[label_index].clone()
-            } else {
-                get_layer_default_label(layer)?
-            };
-            result.push((default_label, default_color.to_string()));
-        }
+    if arr.len().is_multiple_of(2)
+        && let Some(default_color) = arr.last().and_then(|v| v.as_str())
+    {
+        let default_label = if !labels.is_empty() && label_index < labels.len() {
+            labels[label_index].clone()
+        } else {
+            get_layer_default_label(layer)?
+        };
+        result.push((default_label, default_color.to_string()));
     }
 
     Ok(result)
@@ -496,11 +497,13 @@ fn parse_interpolate(layer: &Layer, arr: &[Value]) -> Result<Vec<(String, String
     let field = arr
         .get(2)
         .and_then(|v| {
-            if let Some(get_arr) = v.as_array() {
-                if get_arr.len() == 2 && get_arr[0] == "get" {
-                    return get_arr[1].as_str();
-                }
+            if let Some(get_arr) = v.as_array()
+                && get_arr.len() == 2
+                && get_arr[0] == "get"
+            {
+                return get_arr[1].as_str();
             }
+
             None
         })
         .ok_or_else(|| {
@@ -551,12 +554,13 @@ fn parse_step(layer: &Layer, arr: &[Value]) -> Result<Vec<(String, String)>, Leg
     // Minimum length: ["step", input, base_output]
     if arr.len() < 3 {
         return Err(LegendError::InvalidExpression(
-            "Array 'step' too short: must have at least operator, input, and base output".to_string(),
+            "Array 'step' too short: must have at least operator, input, and base output"
+                .to_string(),
         ));
     }
 
     // Allow even or odd lengths, as long as pairs are valid
-    if arr.len() > 3 && arr.len() % 2 == 0 {
+    if arr.len() > 3 && arr.len().is_multiple_of(2) {
         return Err(LegendError::InvalidExpression(
             "Array 'step' has incomplete threshold-color pair".to_string(),
         ));
@@ -568,17 +572,17 @@ fn parse_step(layer: &Layer, arr: &[Value]) -> Result<Vec<(String, String)>, Leg
     let field = arr
         .get(1)
         .and_then(|v| {
-            if let Some(get_arr) = v.as_array() {
-                if get_arr.len() == 2 && get_arr[0] == "get" {
-                    return get_arr[1].as_str();
-                }
+            if let Some(get_arr) = v.as_array()
+                && get_arr.len() == 2
+                && get_arr[0] == "get"
+            {
+                return get_arr[1].as_str();
             }
+
             None
         })
         .ok_or_else(|| {
-            LegendError::InvalidExpression(
-                "Invalid 'get' field in 'step' expression".to_string(),
-            )
+            LegendError::InvalidExpression("Invalid 'get' field in 'step' expression".to_string())
         })?;
 
     let mut result = Vec::new();
@@ -588,15 +592,11 @@ fn parse_step(layer: &Layer, arr: &[Value]) -> Result<Vec<(String, String)>, Leg
     let base_color = arr
         .get(2)
         .ok_or_else(|| {
-            LegendError::InvalidExpression(
-                "Missing base color in 'step' expression".to_string(),
-            )
+            LegendError::InvalidExpression("Missing base color in 'step' expression".to_string())
         })?
         .as_str()
         .ok_or_else(|| {
-            LegendError::InvalidExpression(
-                "Base color is not a string in 'step'".to_string(),
-            )
+            LegendError::InvalidExpression("Base color is not a string in 'step'".to_string())
         })?
         .to_string();
 
@@ -624,28 +624,20 @@ fn parse_step(layer: &Layer, arr: &[Value]) -> Result<Vec<(String, String)>, Leg
         let threshold = arr
             .get(i)
             .ok_or_else(|| {
-                LegendError::InvalidExpression(
-                    "Missing threshold in 'step' expression".to_string(),
-                )
+                LegendError::InvalidExpression("Missing threshold in 'step' expression".to_string())
             })?
             .as_f64()
             .ok_or_else(|| {
-                LegendError::InvalidExpression(
-                    "Threshold is not a number in 'step'".to_string(),
-                )
+                LegendError::InvalidExpression("Threshold is not a number in 'step'".to_string())
             })?;
         let color = arr
             .get(i + 1)
             .ok_or_else(|| {
-                LegendError::InvalidExpression(
-                    "Missing color in 'step' expression".to_string(),
-                )
+                LegendError::InvalidExpression("Missing color in 'step' expression".to_string())
             })?
             .as_str()
             .ok_or_else(|| {
-                LegendError::InvalidExpression(
-                    "Color is not a string in 'step'".to_string(),
-                )
+                LegendError::InvalidExpression("Color is not a string in 'step'".to_string())
             })?
             .to_string();
 
@@ -725,10 +717,7 @@ mod tests {
 
     #[test]
     fn test_extract_field() {
-        assert_eq!(
-            extract_field(&json!(["get", "estado"])).unwrap(),
-            "estado"
-        );
+        assert_eq!(extract_field(&json!(["get", "estado"])).unwrap(), "estado");
         assert_eq!(
             extract_field(&json!(["downcase", ["get", "estado"]])).unwrap(),
             "estado"
@@ -763,10 +752,16 @@ mod tests {
             }
         });
         let layer: Layer = serde_json::from_value(layer).unwrap();
-        let result = parse_match(&layer.clone(), layer.paint.unwrap()["fill-color"].as_array().unwrap());
+        let result = parse_match(
+            &layer.clone(),
+            layer.paint.unwrap()["fill-color"].as_array().unwrap(),
+        );
         assert_eq!(
             result.expect("Failed to parse match expression"),
-            vec![(String::from("Baldio"), String::from("#a2d0a4")), (String::from("Otras"), String::from("#91836f"))]
+            vec![
+                (String::from("Baldio"), String::from("#a2d0a4")),
+                (String::from("Otras"), String::from("#91836f"))
+            ]
         );
     }
 }
