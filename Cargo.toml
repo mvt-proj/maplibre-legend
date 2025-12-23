@@ -1,6 +1,6 @@
 [package]
 name = "maplibre-legend"
-version = "0.4.3"
+version = "0.4.4"
 edition = "2024"
 authors = ["Jose Jachuf <jjachuf@gmail.com>"]
 description = "A library that dynamically generates layer legends based on the information in a MapLibre style.json file."
