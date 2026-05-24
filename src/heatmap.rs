@@ -5,6 +5,12 @@ use crate::{
 use svg::Document;
 use svg::node::element::{Definitions, RadialGradient, Rectangle, Stop};
 
+/// Renders a `heatmap` layer legend as an SVG.
+///
+/// Shows a rectangle with a hard-coded radial gradient (dark red → light yellow) as a
+/// visual hint. The gradient does not reflect the actual `heatmap-color` expression.
+///
+/// Returns `(svg_string, width, height)`.
 pub fn render_heatmap(
     layer: &Layer,
     default_width: u32,

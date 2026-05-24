@@ -5,6 +5,11 @@ use crate::{
 use svg::Document;
 use svg::node::element::Rectangle;
 
+/// Renders a fallback legend entry for unknown or unsupported layer types.
+///
+/// Shows a gray rectangle (`#cccccc`) with 80% opacity, optionally with the layer label.
+///
+/// Returns `(svg_string, width, height)`.
 pub fn render_default(
     layer: &Layer,
     default_width: u32,

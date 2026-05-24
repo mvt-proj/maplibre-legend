@@ -1,0 +1,90 @@
+{
+  "version": 8,
+  "name": "Background y Fill Extrusion",
+  "sources": {
+    "dummy-source": {
+      "type": "geojson",
+      "data": {
+        "type": "FeatureCollection",
+        "features": []
+      }
+    }
+  },
+  "layers": [
+    {
+      "id": "fondo-oceano",
+      "type": "background",
+      "paint": {
+        "background-color": "#a8d8ea",
+        "background-opacity": 0.9
+      },
+      "metadata": {
+        "legend": {
+          "label": "Océano"
+        }
+      }
+    },
+    {
+      "id": "edificios-simple",
+      "type": "fill-extrusion",
+      "source": "dummy-source",
+      "paint": {
+        "fill-extrusion-color": "#c8a87a",
+        "fill-extrusion-height": 20,
+        "fill-extrusion-opacity": 0.85
+      },
+      "metadata": {
+        "legend": {
+          "label": "Edificios"
+        }
+      }
+    },
+    {
+      "id": "edificios-uso",
+      "type": "fill-extrusion",
+      "source": "dummy-source",
+      "paint": {
+        "fill-extrusion-color": [
+          "match",
+          ["get", "uso"],
+          "residencial", "#e8c97a",
+          "comercial",   "#7ab8e8",
+          "industrial",  "#b87ae8",
+          "equipamiento","#7ae8a8",
+          "#cccccc"
+        ],
+        "fill-extrusion-height": ["get", "altura"],
+        "fill-extrusion-opacity": 0.8
+      },
+      "metadata": {
+        "legend": {
+          "label": "Edificios por uso"
+        }
+      }
+    },
+    {
+      "id": "densidad-poblacion",
+      "type": "fill-extrusion",
+      "source": "dummy-source",
+      "paint": {
+        "fill-extrusion-color": [
+          "interpolate",
+          ["linear"],
+          ["get", "densidad"],
+          0,   "#ffffcc",
+          500, "#fed976",
+          1000,"#fd8d3c",
+          2000,"#e31a1c"
+        ],
+        "fill-extrusion-height": ["*", ["get", "densidad"], 0.05],
+        "fill-extrusion-opacity": 0.75
+      },
+      "metadata": {
+        "legend": {
+          "label": "Densidad de Población",
+          "custom-labels": ["Baja", "Media-baja", "Media-alta", "Alta"]
+        }
+      }
+    }
+  ]
+}

@@ -5,6 +5,12 @@ use crate::{
 use svg::Document;
 use svg::node::element::Rectangle;
 
+/// Renders a `raster` layer legend as an SVG.
+///
+/// Shows a 4×2 checkerboard of muted colors as a generic raster placeholder.
+/// The actual raster colors are not read from the style.
+///
+/// Returns `(svg_string, width, height)`.
 pub fn render_raster(
     layer: &Layer,
     default_width: u32,
