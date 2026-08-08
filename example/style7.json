@@ -18,7 +18,7 @@
       "type": "fill",
       "source": "dummy-source",
       "paint": {
-        "fill-pattern": "circle_11",
+        "fill-pattern": "star_11",
         "fill-outline-color": "#2c7bb6"
       },
       "metadata": {

@@ -1,6 +1,6 @@
 [package]
 name = "maplibre-legend"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2024"
 authors = ["Jose Jachuf <jjachuf@gmail.com>"]
 description = "A library that dynamically generates layer legends based on the information in a MapLibre style.json file."
@@ -17,7 +17,7 @@ serde = { version = "1", features = ["derive"] }
 thiserror = "2.0"
 reqwest = { version = "0.13", optional = true, default-features = false }
 image = "0.25"
-base64 = "0.22"
+base64 = "0.23"
 
 [features]
 default = ["async"]
