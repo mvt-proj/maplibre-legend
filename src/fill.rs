@@ -15,6 +15,12 @@ use svg::node::element::{Image, Rectangle, Text as SvgText};
 /// - Single-color paint: one rectangle with the layer label alongside.
 /// - Expression-based paint (`match`, `case`, `interpolate`, `step`, `coalesce`):
 ///   one rectangle per case, stacked vertically with labels.
+/// - `fill-pattern` (string sprite icon name): renders the named sprite icon inside an
+///   outlined rectangle instead of a solid color; requires `sprite_data` to be loaded.
+///   Returns [`LegendError::InvalidJson`] if `sprite_data` is empty, the icon name is not
+///   found in any loaded spritesheet, or `fill-pattern` is not a string (an expression array
+///   yields a "not yet supported" error; any other non-string value yields a "must be a
+///   string" error).
 ///
 /// Returns `(svg_string, width, height)`.
 pub fn render_fill(
@@ -124,7 +130,11 @@ fn render_fill_pattern(
     has_label: bool,
 ) -> Result<(String, u32, u32), LegendError> {
     let icon_name = pattern_value.as_str().ok_or_else(|| {
-        LegendError::InvalidJson("fill-pattern expressions are not yet supported".to_string())
+        if pattern_value.is_array() {
+            LegendError::InvalidJson("fill-pattern expressions are not yet supported".to_string())
+        } else {
+            LegendError::InvalidJson("fill-pattern must be a string (icon name)".to_string())
+        }
     })?;
 
     if sprite_data.is_empty() {
@@ -136,6 +146,10 @@ fn render_fill_pattern(
     let data_url = get_icon_data_url(sprite_data, icon_name)?;
     let fill_outline_color =
         extract_color(paint.get("fill-outline-color")).unwrap_or("black".to_string());
+    let opacity = paint
+        .get("fill-opacity")
+        .and_then(|v| v.as_f64())
+        .unwrap_or(1.0);
 
     let mut doc = Document::new()
         .set("width", default_width)
@@ -156,7 +170,8 @@ fn render_fill_pattern(
         .set("y", PADDING)
         .set("width", 30)
         .set("height", ICON_HEIGHT)
-        .set("href", data_url);
+        .set("href", data_url)
+        .set("opacity", opacity);
     doc = doc.add(image);
 
     if has_label {
@@ -242,6 +257,26 @@ mod tests {
         let result = render_fill(&layer, &p, 200, 40, false, &sprites);
         let err = result.unwrap_err();
         assert!(err.to_string().contains("not yet supported"));
+    }
+
+    #[test]
+    fn test_render_fill_pattern_non_string_non_array_returns_clear_err() {
+        let layer = make_layer("test");
+        let p = paint(json!({"fill-pattern": 42}));
+        let sprites = fake_sprite_with_icon("pattern-icon");
+        let result = render_fill(&layer, &p, 200, 40, false, &sprites);
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("must be a string"));
+        assert!(!err.to_string().contains("not yet supported"));
+    }
+
+    #[test]
+    fn test_render_fill_pattern_honors_fill_opacity() {
+        let layer = make_layer("test");
+        let p = paint(json!({"fill-pattern": "pattern-icon", "fill-opacity": 0.5}));
+        let sprites = fake_sprite_with_icon("pattern-icon");
+        let (svg, _, _) = render_fill(&layer, &p, 200, 40, false, &sprites).unwrap();
+        assert!(svg.contains("opacity=\"0.5\""));
     }
 
     #[test]
