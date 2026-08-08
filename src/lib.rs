@@ -252,7 +252,7 @@ fn render_layer_svg(
                     ))
                 })?;
             match layer.layer_type.as_str() {
-                "fill" => render_fill(layer, paint, def_w, def_h, render_label),
+                "fill" => render_fill(layer, paint, def_w, def_h, render_label, sprite_data),
                 "line" => render_line(layer, paint, def_w, def_h, render_label),
                 "circle" => render_circle(layer, paint, def_w, def_h, render_label),
                 _ => Err(LegendError::InvalidJson(format!(
