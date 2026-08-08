@@ -318,7 +318,8 @@ mod tests {
         let (svg, width, height) =
             render_layer_svg(&layer, 200, 40, false, false, &sprites).unwrap();
         assert_eq!(width, 200);
-        assert_eq!(height, 40);
+        // No label: height = ICON_HEIGHT(20) + ROW_HEIGHT(30) = 50
+        assert_eq!(height, 50);
         assert!(svg.contains("<image"));
     }
 

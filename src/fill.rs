@@ -126,7 +126,7 @@ fn render_fill_pattern(
     pattern_value: &serde_json::Value,
     sprite_data: &[(DynamicImage, Value)],
     default_width: u32,
-    default_height: u32,
+    _default_height: u32,
     has_label: bool,
 ) -> Result<(String, u32, u32), LegendError> {
     let icon_name = pattern_value.as_str().ok_or_else(|| {
@@ -151,13 +151,29 @@ fn render_fill_pattern(
         .and_then(|v| v.as_f64())
         .unwrap_or(1.0);
 
+    let swatch_y = if has_label {
+        PADDING + ROW_HEIGHT
+    } else {
+        PADDING
+    };
+    let height = if has_label {
+        ICON_HEIGHT + ROW_HEIGHT + ICON_HEIGHT
+    } else {
+        ICON_HEIGHT + ROW_HEIGHT
+    };
+
     let mut doc = Document::new()
         .set("width", default_width)
-        .set("height", default_height);
+        .set("height", height);
+
+    if has_label {
+        render_label(layer, &mut doc, Some(10), Some(20), Some(true))?;
+        render_separator(&mut doc, default_width, 0, 10);
+    }
 
     let rect = Rectangle::new()
         .set("x", PADDING)
-        .set("y", PADDING)
+        .set("y", swatch_y)
         .set("width", 30)
         .set("height", ICON_HEIGHT)
         .set("fill", "none")
@@ -167,18 +183,14 @@ fn render_fill_pattern(
 
     let image = Image::new()
         .set("x", PADDING)
-        .set("y", PADDING)
+        .set("y", swatch_y)
         .set("width", 30)
         .set("height", ICON_HEIGHT)
         .set("href", data_url)
         .set("opacity", opacity);
     doc = doc.add(image);
 
-    if has_label {
-        render_label(layer, &mut doc, None, None, None)?;
-    }
-
-    Ok((doc.to_string(), default_width, default_height))
+    Ok((doc.to_string(), default_width, height))
 }
 
 #[cfg(test)]
@@ -218,7 +230,8 @@ mod tests {
         let sprites = fake_sprite_with_icon("pattern-icon");
         let (svg, width, height) = render_fill(&layer, &p, 200, 40, false, &sprites).unwrap();
         assert_eq!(width, 200);
-        assert_eq!(height, 40);
+        // No label: height = ICON_HEIGHT(20) + ROW_HEIGHT(30) = 50
+        assert_eq!(height, 50);
         assert!(svg.contains("<image"));
         assert!(svg.contains("data:image/png;base64,"));
     }
@@ -228,8 +241,10 @@ mod tests {
         let layer = make_layer_with_label("test", "Wetland");
         let p = paint(json!({"fill-pattern": "pattern-icon"}));
         let sprites = fake_sprite_with_icon("pattern-icon");
-        let (svg, _, _) = render_fill(&layer, &p, 200, 40, true, &sprites).unwrap();
+        let (svg, _, height) = render_fill(&layer, &p, 200, 40, true, &sprites).unwrap();
         assert!(svg.contains("Wetland"));
+        // With label: height = ICON_HEIGHT(20) + ROW_HEIGHT(30) + ICON_HEIGHT(20) = 70
+        assert_eq!(height, 70);
     }
 
     #[test]
