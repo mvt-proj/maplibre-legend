@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- `fill` layers now support `fill-pattern` (sprite icon name as a string). The
+  legend swatch shows the sprite icon in place of a solid color. Expression-based
+  `fill-pattern` (`match`/`case`) is not yet supported and returns an error.
+
 ## [0.5.0] - 2026-05-24
 
 ### Breaking changes
