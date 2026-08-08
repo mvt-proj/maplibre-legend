@@ -298,6 +298,30 @@ mod tests {
         .unwrap()
     }
 
+    fn fake_sprite_with_icon(icon_name: &str) -> Vec<(image::DynamicImage, serde_json::Value)> {
+        let img = image::DynamicImage::new_rgba8(4, 4);
+        let sprite_json = json!({
+            icon_name: { "x": 0, "y": 0, "width": 4, "height": 4 }
+        });
+        vec![(img, sprite_json)]
+    }
+
+    #[test]
+    fn test_render_layer_svg_fill_pattern() {
+        let layer: Layer = serde_json::from_value(json!({
+            "id": "wetland",
+            "type": "fill",
+            "paint": {"fill-pattern": "wetland-icon"}
+        }))
+        .unwrap();
+        let sprites = fake_sprite_with_icon("wetland-icon");
+        let (svg, width, height) =
+            render_layer_svg(&layer, 200, 40, false, false, &sprites).unwrap();
+        assert_eq!(width, 200);
+        assert_eq!(height, 40);
+        assert!(svg.contains("<image"));
+    }
+
     #[test]
     fn test_render_layer_svg_fill_single_color() {
         let layer = fill_layer("test", "#ff0000");
