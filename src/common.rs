@@ -826,7 +826,7 @@ pub fn parse_expression(
             _ => {
                 return Err(LegendError::InvalidExpression(format!(
                     "The value is neither a string, a number, nor a boolean. Layer: {}",
-                    &layer.id
+                    layer.id
                 )));
             }
         };
