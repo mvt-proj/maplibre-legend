@@ -1,0 +1,45 @@
+{
+  "version": 8,
+  "name": "Fill Pattern Demo",
+  "sprite": "https://demotiles.maplibre.org/styles/osm-bright-gl-style/sprite",
+  "glyphs": "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+  "sources": {
+    "dummy-source": {
+      "type": "geojson",
+      "data": {
+        "type": "FeatureCollection",
+        "features": []
+      }
+    }
+  },
+  "layers": [
+    {
+      "id": "wetland-pattern",
+      "type": "fill",
+      "source": "dummy-source",
+      "paint": {
+        "fill-pattern": "circle_11",
+        "fill-outline-color": "#2c7bb6"
+      },
+      "metadata": {
+        "legend": {
+          "label": "Humedal (patrón)"
+        }
+      }
+    },
+    {
+      "id": "solid-fill-comparison",
+      "type": "fill",
+      "source": "dummy-source",
+      "paint": {
+        "fill-color": "#a2d0a4",
+        "fill-outline-color": "#333333"
+      },
+      "metadata": {
+        "legend": {
+          "label": "Relleno sólido (comparación)"
+        }
+      }
+    }
+  ]
+}

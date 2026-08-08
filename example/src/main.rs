@@ -8,7 +8,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ..Default::default()
     };
 
-    for i in 1..=6 {
+    for i in 1..=7 {
         let style_json = fs::read_to_string(format!("style{}.json", i)).await?;
         let legend = MapLibreLegend::new(&style_json, config.clone()).await?;
         let combined = legend.render_all(true)?;
