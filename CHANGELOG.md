@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 - `fill` layers now support `fill-pattern` (sprite icon name as a string). The
   legend swatch shows the sprite icon in place of a solid color. Expression-based
   `fill-pattern` (`match`/`case`) is not yet supported and returns an error.
+- `metadata.legend` gains a `show-default` boolean (for `match`/`case` expressions).
+  Set it to `false` to omit the fallback/default entry from the legend entirely,
+  instead of the previous workaround of an empty `default` label that still reserved
+  a blank row.
 
 ## [0.5.0] - 2026-05-24
 
