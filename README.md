@@ -148,6 +148,7 @@ Each layer can override legend behavior through a `"legend"` object in its `meta
 | `label` | string | Title for the legend entry. Falls back to the layer `id`. |
 | `default` | string | Label for the expression's fallback/default color. |
 | `custom-labels` | array of strings | Labels for each stop or case in the expression, in order. |
+| `show-default` | boolean | Whether to include the `match`/`case` fallback/default entry in the legend. Defaults to `true`. Set to `false` to omit it entirely (no reserved row), instead of hiding it with an empty `default` label. |
 
 ## Supported expressions
 

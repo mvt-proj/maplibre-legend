@@ -130,6 +130,15 @@ pub fn get_layer_default_label(layer: &Layer) -> Result<String, LegendError> {
     Ok(default_label)
 }
 
+pub fn get_show_default(layer: &Layer) -> Result<bool, LegendError> {
+    let legend = get_legend_object(layer)?;
+    let show_default = legend
+        .and_then(|l| l.get("show-default"))
+        .and_then(|v| v.as_bool())
+        .unwrap_or(true);
+    Ok(show_default)
+}
+
 pub fn get_custom_labels(layer: &Layer) -> Result<Vec<String>, LegendError> {
     let legend = get_legend_object(layer)?;
     let custom_labels = legend
@@ -472,7 +481,8 @@ pub fn format_condition(cond: &serde_json::Value) -> Result<String, LegendError>
 ///
 /// Each `(value, color)` pair becomes one entry. Custom labels from layer metadata are applied
 /// positionally if provided; otherwise the matched value is used as the label.
-/// The final element is the default color, paired with the layer's `default` metadata label.
+/// The final element is the default color, paired with the layer's `default` metadata label —
+/// unless `show-default` is `false` in the layer's `metadata.legend`, in which case it is omitted.
 fn parse_match(layer: &Layer, arr: &[Value]) -> Result<Vec<(String, String)>, LegendError> {
     if arr.len() < 4 {
         return Err(LegendError::InvalidExpression(format!(
@@ -524,7 +534,9 @@ fn parse_match(layer: &Layer, arr: &[Value]) -> Result<Vec<(String, String)>, Le
         label_index += 1;
     }
 
-    if let Some(default_color) = arr.last().and_then(|v| v.as_str()) {
+    if get_show_default(layer)?
+        && let Some(default_color) = arr.last().and_then(|v| v.as_str())
+    {
         let default_label = if !labels.is_empty() && label_index < labels.len() {
             labels[label_index].clone()
         } else {
@@ -540,6 +552,8 @@ fn parse_match(layer: &Layer, arr: &[Value]) -> Result<Vec<(String, String)>, Le
 ///
 /// Each condition is converted to a human-readable string via [`format_condition`].
 /// Custom labels replace conditions when provided in layer metadata.
+/// The final default color is omitted if `show-default` is `false` in the layer's
+/// `metadata.legend`.
 fn parse_case(layer: &Layer, arr: &[Value]) -> Result<Vec<(String, String)>, LegendError> {
     let labels = get_custom_labels(layer)?;
     let mut result = Vec::new();
@@ -568,7 +582,8 @@ fn parse_case(layer: &Layer, arr: &[Value]) -> Result<Vec<(String, String)>, Leg
         i += 2;
     }
 
-    if arr.len().is_multiple_of(2)
+    if get_show_default(layer)?
+        && arr.len().is_multiple_of(2)
         && let Some(default_color) = arr.last().and_then(|v| v.as_str())
     {
         let default_label = if !labels.is_empty() && label_index < labels.len() {
@@ -916,6 +931,118 @@ mod tests {
                 (String::from("Otras"), String::from("#91836f"))
             ]
         );
+    }
+
+    #[test]
+    fn test_get_show_default_absent_defaults_true() {
+        let layer: Layer = serde_json::from_value(json!({"id": "test", "type": "fill"})).unwrap();
+        assert!(get_show_default(&layer).unwrap());
+    }
+
+    #[test]
+    fn test_get_show_default_explicit_true() {
+        let layer: Layer = serde_json::from_value(json!({
+            "id": "test", "type": "fill",
+            "metadata": {"legend": {"show-default": true}}
+        }))
+        .unwrap();
+        assert!(get_show_default(&layer).unwrap());
+    }
+
+    #[test]
+    fn test_get_show_default_explicit_false() {
+        let layer: Layer = serde_json::from_value(json!({
+            "id": "test", "type": "fill",
+            "metadata": {"legend": {"show-default": false}}
+        }))
+        .unwrap();
+        assert!(!get_show_default(&layer).unwrap());
+    }
+
+    #[test]
+    fn test_parse_match_show_default_false_omits_default_entry() {
+        let layer: Layer = serde_json::from_value(json!({
+            "id": "test", "type": "fill",
+            "metadata": {"legend": {"show-default": false}}
+        }))
+        .unwrap();
+        let expr = json!(["match", ["get", "tipo"], "bosque", "#228B22", "#cccccc"]);
+        let result = parse_expression(&layer, &expr).unwrap();
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0], ("bosque".to_string(), "#228B22".to_string()));
+    }
+
+    #[test]
+    fn test_parse_match_show_default_true_keeps_default_entry() {
+        let layer: Layer = serde_json::from_value(json!({
+            "id": "test", "type": "fill",
+            "metadata": {"legend": {"show-default": true, "default": "Otros"}}
+        }))
+        .unwrap();
+        let expr = json!(["match", ["get", "tipo"], "bosque", "#228B22", "#cccccc"]);
+        let result = parse_expression(&layer, &expr).unwrap();
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[1], ("Otros".to_string(), "#cccccc".to_string()));
+    }
+
+    #[test]
+    fn test_parse_match_show_default_absent_keeps_default_entry() {
+        let layer: Layer = serde_json::from_value(json!({"id": "test", "type": "fill"})).unwrap();
+        let expr = json!(["match", ["get", "tipo"], "bosque", "#228B22", "#cccccc"]);
+        let result = parse_expression(&layer, &expr).unwrap();
+        assert_eq!(result.len(), 2);
+    }
+
+    #[test]
+    fn test_parse_match_show_default_false_ignores_extra_custom_label() {
+        let layer: Layer = serde_json::from_value(json!({
+            "id": "test", "type": "fill",
+            "metadata": {
+                "legend": {
+                    "show-default": false,
+                    "custom-labels": ["Bosque", "Otros"]
+                }
+            }
+        }))
+        .unwrap();
+        let expr = json!(["match", ["get", "tipo"], "bosque", "#228B22", "#cccccc"]);
+        let result = parse_expression(&layer, &expr).unwrap();
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].0, "Bosque");
+    }
+
+    #[test]
+    fn test_parse_case_show_default_false_omits_default_entry() {
+        let layer: Layer = serde_json::from_value(json!({
+            "id": "test", "type": "fill",
+            "metadata": {"legend": {"show-default": false}}
+        }))
+        .unwrap();
+        let expr = json!(["case", ["has", "nombre"], "#ff0000", "#cccccc"]);
+        let result = parse_expression(&layer, &expr).unwrap();
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0], ("has nombre".to_string(), "#ff0000".to_string()));
+    }
+
+    #[test]
+    fn test_parse_case_show_default_true_keeps_default_entry() {
+        let layer: Layer = serde_json::from_value(json!({
+            "id": "test", "type": "fill",
+            "metadata": {"legend": {"default": "Otros"}}
+        }))
+        .unwrap();
+        let expr = json!(["case", ["has", "nombre"], "#ff0000", "#cccccc"]);
+        let result = parse_expression(&layer, &expr).unwrap();
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[1], ("Otros".to_string(), "#cccccc".to_string()));
+    }
+
+    #[test]
+    fn test_parse_case_show_default_absent_keeps_default_entry() {
+        let layer: Layer = serde_json::from_value(json!({"id": "test", "type": "fill"})).unwrap();
+        let expr = json!(["case", ["has", "nombre"], "#ff0000", "#cccccc"]);
+        let result = parse_expression(&layer, &expr).unwrap();
+        assert_eq!(result.len(), 2);
     }
 
     #[test]
