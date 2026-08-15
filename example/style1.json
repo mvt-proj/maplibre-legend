@@ -192,7 +192,8 @@
       "metadata": {
         "legend": {
           "label": "Parcelas Caroya por Tipo",
-          "default": "Otros Tipos"
+          "default": "Otros Tipos",
+          "show-default": false
         }
       }
     },
