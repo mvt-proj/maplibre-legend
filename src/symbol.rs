@@ -9,6 +9,9 @@ use serde_json::Value;
 use svg::Document;
 use svg::node::element::{Image, Text as SvgText};
 
+/// Side length (px) of a sprite icon drawn in the legend.
+const ICON_SIZE: u32 = 24;
+
 /// Extracts the `layout` object from a layer, returning an error if absent or not an object.
 pub fn get_layout_object(layer: &Layer) -> Result<&serde_json::Map<String, Value>, LegendError> {
     let layout = layer
@@ -59,17 +62,28 @@ pub fn render_symbol(
         }
 
         if let Some(icon_name) = icon_image.as_str() {
-            let data_url = get_icon_data_url(sprite_data, icon_name, icon_color.as_deref())?;
+            let data_url = get_icon_data_url(
+                sprite_data,
+                icon_name,
+                icon_color.as_deref(),
+                (ICON_SIZE, ICON_SIZE),
+            )?;
             let image = Image::new()
                 .set("x", 10)
                 .set("y", 10)
-                .set("width", 20)
-                .set("height", 20)
+                .set("width", ICON_SIZE)
+                .set("height", ICON_SIZE)
                 .set("href", data_url);
             doc = doc.add(image);
 
             if has_label {
-                render_label(layer, &mut doc, Some(40), Some(25), Some(false))?;
+                render_label(
+                    layer,
+                    &mut doc,
+                    Some(10 + ICON_SIZE + 10),
+                    Some(27),
+                    Some(false),
+                )?;
             }
         } else if let Some(_arr) = icon_image.as_array() {
             let cases = parse_expression(layer, icon_image)?;
@@ -79,18 +93,23 @@ pub fn render_symbol(
             }
             let mut y = if has_label { 40 } else { 10 };
             for (label, icon_name) in cases {
-                let data_url = get_icon_data_url(sprite_data, &icon_name, icon_color.as_deref())?;
+                let data_url = get_icon_data_url(
+                    sprite_data,
+                    &icon_name,
+                    icon_color.as_deref(),
+                    (ICON_SIZE, ICON_SIZE),
+                )?;
                 let image = Image::new()
                     .set("x", 10)
                     .set("y", y)
-                    .set("width", 20)
-                    .set("height", 20)
+                    .set("width", ICON_SIZE)
+                    .set("height", ICON_SIZE)
                     .set("href", data_url);
                 doc = doc.add(image);
 
                 let text = SvgText::new("")
-                    .set("x", 40)
-                    .set("y", y + 15)
+                    .set("x", 10 + ICON_SIZE + 10)
+                    .set("y", y + 17)
                     .set("font-size", 14)
                     .set("fill", "black")
                     .add(svg::node::Text::new(label));
@@ -187,6 +206,20 @@ mod tests {
         let bytes = STANDARD.decode(b64).unwrap();
         let decoded = image::load_from_memory(&bytes).unwrap().to_rgba8();
         assert_eq!(decoded.get_pixel(0, 0).0, [255, 0, 0, 255]);
+    }
+
+    #[test]
+    fn test_render_symbol_icon_is_24px() {
+        let layer = make_layer_with_layout("sym", json!({"icon-image": "marker"}));
+        let img = image::RgbaImage::from_raw(1, 1, vec![0, 0, 0, 255]).unwrap();
+        let sprite_json = json!({
+            "marker": { "x": 0, "y": 0, "width": 1, "height": 1 }
+        });
+        let sprites = vec![(image::DynamicImage::ImageRgba8(img), sprite_json)];
+
+        let (svg, _, _) = render_symbol(&layer, 200, 40, false, &sprites).unwrap();
+        assert!(svg.contains(r#"width="24""#));
+        assert!(svg.contains(r#"height="24""#));
     }
 
     #[test]
