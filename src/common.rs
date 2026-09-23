@@ -234,13 +234,19 @@ fn get_single_sprite_sync(sprite_url: &str) -> Result<(DynamicImage, Value), Leg
 
 /// Searches all loaded spritesheets for `icon_name` and returns a base64-encoded PNG data URL.
 /// Spritesheets are checked in order; the first match wins.
+///
+/// `icon_color` is the resolved `icon-color` paint value. It only affects icons whose sprite
+/// entry is marked `"sdf": true`: since an SDF sprite stores a distance field (not real pixel
+/// colors), it is reconstructed into a crisp mask and tinted with `icon_color` (black if `None`).
+/// Non-SDF icons are returned unchanged, ignoring `icon_color`.
 pub fn get_icon_data_url(
     sprites: &[(DynamicImage, Value)],
     icon_name: &str,
+    icon_color: Option<&str>,
 ) -> Result<String, LegendError> {
     for (sprite_img, sprite_json) in sprites {
         if let Some(icon_info) = sprite_json.get(icon_name) {
-            return extract_icon_from_sprite(sprite_img, icon_info, icon_name);
+            return extract_icon_from_sprite(sprite_img, icon_info, icon_name, icon_color);
         }
     }
     Err(LegendError::InvalidJson(format!(
@@ -249,10 +255,62 @@ pub fn get_icon_data_url(
     )))
 }
 
+/// Parses a CSS color string (`#rgb`, `#rrggbb`, `#rrggbbaa`, `rgb()`, `rgba()`) into an RGB
+/// triple, ignoring any alpha component. Falls back to black for anything else (e.g. named
+/// colors), matching the SDF default tint used when `icon-color` is absent.
+fn parse_color_to_rgb(color: &str) -> [u8; 3] {
+    let color = color.trim();
+    if let Some(hex) = color.strip_prefix('#') {
+        if hex.len() == 6 || hex.len() == 8 {
+            let r = u8::from_str_radix(&hex[0..2], 16);
+            let g = u8::from_str_radix(&hex[2..4], 16);
+            let b = u8::from_str_radix(&hex[4..6], 16);
+            if let (Ok(r), Ok(g), Ok(b)) = (r, g, b) {
+                return [r, g, b];
+            }
+        }
+    } else if let Some(inner) = color
+        .strip_prefix("rgba(")
+        .or_else(|| color.strip_prefix("rgb("))
+    {
+        let inner = inner.trim_end_matches(')');
+        let parts: Vec<&str> = inner.split(',').map(|p| p.trim()).collect();
+        if parts.len() >= 3 {
+            let r = parts[0].parse::<u8>();
+            let g = parts[1].parse::<u8>();
+            let b = parts[2].parse::<u8>();
+            if let (Ok(r), Ok(g), Ok(b)) = (r, g, b) {
+                return [r, g, b];
+            }
+        }
+    }
+    [0, 0, 0]
+}
+
+fn smoothstep(edge0: f32, edge1: f32, x: f32) -> f32 {
+    let t = ((x - edge0) / (edge1 - edge0)).clamp(0.0, 1.0);
+    t * t * (3.0 - 2.0 * t)
+}
+
+/// Reconstructs a crisp, colored icon from an SDF spritesheet crop.
+///
+/// SDF sprites (e.g. from `spreet --sdf`) encode a signed distance field in the alpha channel,
+/// with the shape boundary at the midpoint (0.5). Applying a `smoothstep` around that midpoint
+/// turns the raw gradient into a clean, anti-aliased mask, which is then painted with `rgb`.
+fn tint_sdf_icon(img: &image::RgbaImage, rgb: [u8; 3]) -> image::RgbaImage {
+    const EDGE_GAMMA: f32 = 0.1;
+    image::RgbaImage::from_fn(img.width(), img.height(), |x, y| {
+        let dist = img.get_pixel(x, y).0[3] as f32 / 255.0;
+        let alpha = smoothstep(0.5 - EDGE_GAMMA, 0.5 + EDGE_GAMMA, dist);
+        image::Rgba([rgb[0], rgb[1], rgb[2], (alpha * 255.0).round() as u8])
+    })
+}
+
 fn extract_icon_from_sprite(
     sprite_img: &DynamicImage,
     icon_info: &Value,
     icon_name: &str,
+    icon_color: Option<&str>,
 ) -> Result<String, LegendError> {
     let x = icon_info.get("x").and_then(|v| v.as_u64()).ok_or_else(|| {
         LegendError::InvalidJson(format!("Invalid 'x' field for icon '{}'", icon_name))
@@ -274,6 +332,17 @@ fn extract_icon_from_sprite(
         })? as u32;
 
     let icon_img = sprite_img.view(x, y, width, height).to_image();
+
+    let is_sdf = icon_info
+        .get("sdf")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+    let icon_img = if is_sdf {
+        let rgb = parse_color_to_rgb(icon_color.unwrap_or("#000000"));
+        tint_sdf_icon(&icon_img, rgb)
+    } else {
+        icon_img
+    };
 
     let mut buf = Vec::new();
     let mut cursor = Cursor::new(&mut buf);
@@ -1318,5 +1387,90 @@ mod tests {
         let json = r#"{"layers": []}"#;
         let style: Style = serde_json::from_str(json).unwrap();
         assert!(style.sprite.is_empty());
+    }
+
+    #[test]
+    fn test_parse_color_to_rgb_hex6() {
+        assert_eq!(parse_color_to_rgb("#ff0080"), [0xff, 0x00, 0x80]);
+    }
+
+    #[test]
+    fn test_parse_color_to_rgb_hex8_ignores_alpha() {
+        assert_eq!(parse_color_to_rgb("#ff008033"), [0xff, 0x00, 0x80]);
+    }
+
+    #[test]
+    fn test_parse_color_to_rgb_rgb_function() {
+        assert_eq!(parse_color_to_rgb("rgb(10, 20, 30)"), [10, 20, 30]);
+        assert_eq!(parse_color_to_rgb("rgba(10, 20, 30, 0.5)"), [10, 20, 30]);
+    }
+
+    #[test]
+    fn test_parse_color_to_rgb_invalid_defaults_black() {
+        assert_eq!(parse_color_to_rgb("not-a-color"), [0, 0, 0]);
+    }
+
+    fn decode_data_url(data_url: &str) -> image::RgbaImage {
+        let b64 = data_url
+            .strip_prefix("data:image/png;base64,")
+            .expect("data url should be a base64 PNG");
+        let bytes = STANDARD.decode(b64).unwrap();
+        image::load_from_memory(&bytes).unwrap().to_rgba8()
+    }
+
+    /// Builds a fake 2x1 spritesheet where pixel 0 is fully "inside" the SDF
+    /// shape (alpha 255) and pixel 1 is fully "outside" (alpha 0), with the
+    /// RGB channels fixed to black as spreet/tiny-sdf output does.
+    fn fake_sdf_sprite(icon_name: &str) -> Vec<(DynamicImage, Value)> {
+        let img = image::RgbaImage::from_raw(
+            2,
+            1,
+            vec![
+                0, 0, 0, 255, // inside the shape
+                0, 0, 0, 0, // outside the shape
+            ],
+        )
+        .unwrap();
+        let sprite_json = json!({
+            icon_name: { "x": 0, "y": 0, "width": 2, "height": 1, "sdf": true }
+        });
+        vec![(DynamicImage::ImageRgba8(img), sprite_json)]
+    }
+
+    #[test]
+    fn test_get_icon_data_url_sdf_tints_with_icon_color() {
+        let sprites = fake_sdf_sprite("marker");
+        let data_url = get_icon_data_url(&sprites, "marker", Some("#ff0000")).unwrap();
+        let decoded = decode_data_url(&data_url);
+
+        let inside = decoded.get_pixel(0, 0);
+        assert_eq!(inside.0, [255, 0, 0, 255]);
+
+        let outside = decoded.get_pixel(1, 0);
+        assert_eq!(outside.0[3], 0);
+    }
+
+    #[test]
+    fn test_get_icon_data_url_sdf_defaults_to_black_without_icon_color() {
+        let sprites = fake_sdf_sprite("marker");
+        let data_url = get_icon_data_url(&sprites, "marker", None).unwrap();
+        let decoded = decode_data_url(&data_url);
+
+        let inside = decoded.get_pixel(0, 0);
+        assert_eq!(inside.0, [0, 0, 0, 255]);
+    }
+
+    #[test]
+    fn test_get_icon_data_url_non_sdf_ignores_icon_color() {
+        // Non-SDF icons must be passed through untouched, regardless of icon_color.
+        let img = image::RgbaImage::from_raw(1, 1, vec![10, 20, 30, 40]).unwrap();
+        let sprite_json = json!({
+            "plain": { "x": 0, "y": 0, "width": 1, "height": 1 }
+        });
+        let sprites = vec![(DynamicImage::ImageRgba8(img), sprite_json)];
+
+        let data_url = get_icon_data_url(&sprites, "plain", Some("#ff0000")).unwrap();
+        let decoded = decode_data_url(&data_url);
+        assert_eq!(decoded.get_pixel(0, 0).0, [10, 20, 30, 40]);
     }
 }

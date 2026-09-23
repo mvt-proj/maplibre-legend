@@ -7,3 +7,5 @@ edition = "2024"
 tokio = { version = "1", features = ["full"] }
 maplibre-legend = { path = ".." }
 # maplibre-legend = { path = "..", default-features = false, features = ["sync"] }
+image = "0.25"
+serde_json = "1"

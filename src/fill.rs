@@ -143,7 +143,7 @@ fn render_fill_pattern(
         ));
     }
 
-    let data_url = get_icon_data_url(sprite_data, icon_name)?;
+    let data_url = get_icon_data_url(sprite_data, icon_name, None)?;
     let fill_outline_color =
         extract_color(paint.get("fill-outline-color")).unwrap_or("black".to_string());
     let opacity = paint

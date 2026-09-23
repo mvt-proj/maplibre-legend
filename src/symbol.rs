@@ -1,5 +1,7 @@
 use crate::{
-    common::{Layer, get_icon_data_url, parse_expression, render_label, render_separator},
+    common::{
+        Layer, extract_color, get_icon_data_url, parse_expression, render_label, render_separator,
+    },
     error::LegendError,
 };
 use image::DynamicImage;
@@ -40,6 +42,11 @@ pub fn render_symbol(
     let layout = get_layout_object(layer)?;
     let text_field = layout.get("text-field");
     let icon_image = layout.get("icon-image");
+    let icon_color = layer
+        .paint
+        .as_ref()
+        .and_then(|p| p.get("icon-color"))
+        .and_then(|v| extract_color(Some(v)).ok());
 
     let mut doc = Document::new().set("width", default_width);
     let mut height = default_height;
@@ -52,7 +59,7 @@ pub fn render_symbol(
         }
 
         if let Some(icon_name) = icon_image.as_str() {
-            let data_url = get_icon_data_url(sprite_data, icon_name)?;
+            let data_url = get_icon_data_url(sprite_data, icon_name, icon_color.as_deref())?;
             let image = Image::new()
                 .set("x", 10)
                 .set("y", 10)
@@ -72,7 +79,7 @@ pub fn render_symbol(
             }
             let mut y = if has_label { 40 } else { 10 };
             for (label, icon_name) in cases {
-                let data_url = get_icon_data_url(sprite_data, &icon_name)?;
+                let data_url = get_icon_data_url(sprite_data, &icon_name, icon_color.as_deref())?;
                 let image = Image::new()
                     .set("x", 10)
                     .set("y", y)
@@ -151,6 +158,35 @@ mod tests {
         let layer = make_layer_with_layout("sym", json!({"icon-image": "marker"}));
         // icon-image requires sprite data; empty slice → error
         assert!(render_symbol(&layer, 200, 40, false, &[]).is_err());
+    }
+
+    #[test]
+    fn test_render_symbol_sdf_icon_uses_paint_icon_color() {
+        let layer: Layer = serde_json::from_value(json!({
+            "id": "sym",
+            "type": "symbol",
+            "layout": {"icon-image": "marker"},
+            "paint": {"icon-color": "#ff0000"}
+        }))
+        .unwrap();
+
+        let img = image::RgbaImage::from_raw(1, 1, vec![0, 0, 0, 255]).unwrap();
+        let sprite_json = json!({
+            "marker": { "x": 0, "y": 0, "width": 1, "height": 1, "sdf": true }
+        });
+        let sprites = vec![(image::DynamicImage::ImageRgba8(img), sprite_json)];
+
+        let (svg, _, _) = render_symbol(&layer, 200, 40, false, &sprites).unwrap();
+
+        let b64 = svg
+            .split("base64,")
+            .nth(1)
+            .and_then(|rest| rest.split('"').next())
+            .expect("svg should embed a base64 PNG");
+        use base64::{Engine as _, engine::general_purpose::STANDARD};
+        let bytes = STANDARD.decode(b64).unwrap();
+        let decoded = image::load_from_memory(&bytes).unwrap().to_rgba8();
+        assert_eq!(decoded.get_pixel(0, 0).0, [255, 0, 0, 255]);
     }
 
     #[test]
